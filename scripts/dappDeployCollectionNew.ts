@@ -8,21 +8,21 @@ import { randomAddress } from '@ton-community/test-utils';
 export async function run(provider: NetworkProvider, args: string[]) {
     const ui = provider.ui();
 
-    const address = Address.parse(args.length > 0 ? args[0] : await ui.input('Dapp address'));
+    const dappAddress = Address.parse(args.length > 0 ? args[0] : await ui.input('Dapp address'));
 
-    const nftDapp = provider.open(NftDapp.createFromAddress(address));
+    const nftDapp = provider.open(NftDapp.createFromAddress(dappAddress));
 
     const collectionDataCell = buildNftCollectionDataCell({
-      ownerAddress: address, 
-      nextItemIndex: 0, 
-      collectionContent: '',
-      commonContent: '',
-      nftItemCode: await compile('OrderNft'),
-      royaltyParams: {
-        royaltyFactor: 12,
-        royaltyBase: 100,
-        royaltyAddress: randomAddress()
-      }
+        collectionContent: '',
+        ownerAddress: dappAddress,
+        nextItemIndex: 0,
+        commonContent: '',
+        nftItemCode: await compile('OrderNft'),
+        royaltyParams: {
+            royaltyFactor: 12,
+            royaltyBase: 100,
+            royaltyAddress: dappAddress
+        }
   });
 
     await nftDapp.sendDeployCollectionMsg(provider.sender(), {

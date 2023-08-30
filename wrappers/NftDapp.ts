@@ -87,7 +87,7 @@ export class NftDapp implements Contract {
         }
     ) {
 
-        const metadata = buildOnchainMetadata({
+        const metadataDict = buildOnchainMetadata({
             name: 'Some Order',
             description: 'Some Order Desription',
             image: 'https://whales.infura-ipfs.io/ipfs/QmQ5QiuLBEmDdQmdWcEEh2rsW53KWahc63xmPVBUSp4teG/3880.png',
@@ -101,16 +101,27 @@ export class NftDapp implements Contract {
             customer_addr: 'EQDWfTV0XtuUrRYF8BqOm1U2yr3axYlpvxxnGXyx2nwIypM3',
         });
 
+        const contentCell = beginCell()
+            .storeDict(metadataDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Cell())
+            .endCell()
+
+        const nftContentCell = beginCell()
+            .storeAddress(opts.itemOwnerAddress)
+            .storeRef(contentCell)
+            .storeAddress(opts.itemAuthorityAddress)
+            .endCell();
+
         await provider.internal(via, {
-            value: toNano('0.2'),
+            value: toNano('0.3'),
             sendMode: SendMode.PAY_GAS_SEPARATLY,
             body: beginCell()
                 .storeUint(Opcodes.deployNftItem, 32)
                 .storeUint(opts.queryId, 64)
                 .storeUint(opts.collectionId, 64)
                 .storeUint(opts.itemIndex, 64)
-                .storeRef(metadata)
-            .endCell()
+                .storeCoins(0)
+                .storeRef(nftContentCell)
+                .endCell()
         });
 
     }

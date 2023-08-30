@@ -1,41 +1,20 @@
 import { beginCell, Cell, Address } from "ton";
 import { Dictionary } from "ton-core";
 import { sha256_sync } from "ton-crypto"
+import crypto from "crypto";
 
 
 const ONCHAIN_CONTENT_PREFIX = 0x00;
 const SNAKE_PREFIX = 0x00;
-const CELL_MAX_SIZE_BYTES = Math.floor((1023 - 8) / 8);
 
-function bufferToChunks(buff: Buffer, chunkSize: number) {
-    let chunks: Buffer[] = [];
-    while (buff.byteLength > 0) {
-        chunks.push(buff.slice(0, chunkSize));
-        buff = buff.slice(chunkSize);
-    }
-    return chunks;
+function sha256Hash(input: string): bigint {
+    const hash = crypto.createHash('sha256');
+    hash.update(input);
+    const hashBuffer = hash.digest();
+    const hashHex = hashBuffer.toString('hex');
+    const numericHash = BigInt('0x' + hashHex);
+    return numericHash;
 }
-
-export function makeSnakeCell(data: Buffer) {
-    let chunks = bufferToChunks(data, CELL_MAX_SIZE_BYTES);
-    const b = chunks.reduceRight((curCell, chunk, index) => {
-        if (index === 0) {
-            curCell.storeInt(SNAKE_PREFIX, 8);
-        }
-        curCell.storeBuffer(chunk);
-        if (index > 0) {
-            const cell = curCell.endCell();
-            return beginCell().storeRef(cell);
-        } else {
-            return curCell;
-        }
-    }, beginCell());
-    return b.endCell();
-}
-
-const toKey = (key: string) => {
-    return BigInt(`0x${sha256_sync(key).toString("hex")}`);
-};
 
 export function buildOnchainMetadata(data: {
     name: string;
@@ -49,14 +28,25 @@ export function buildOnchainMetadata(data: {
     creation_unix_time: string;
     category: string;
     customer_addr: string;
-}): Cell {
+}): Dictionary<bigint, Cell> {
     let dict = Dictionary.empty(
         Dictionary.Keys.BigUint(256),
         Dictionary.Values.Cell()
     );
+
+    data.description = `${data.description}
+
+test: 1
+test: 2
+test: 3
+`
+
     Object.entries(data).forEach(([key, value]) => {
-        dict.set(toKey(key), makeSnakeCell(Buffer.from(value, "utf8")));
+        dict.set(sha256Hash(key), beginCell()
+            .storeUint(ONCHAIN_CONTENT_PREFIX, 8)
+            .storeStringTail(value)
+            .endCell());
     });
 
-    return beginCell().storeUint(ONCHAIN_CONTENT_PREFIX, 8).storeDict(dict).endCell();
+    return dict;
 }

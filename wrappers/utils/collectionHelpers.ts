@@ -1,5 +1,6 @@
-import { Address, Cell, beginCell } from "ton-core";
+import {Address, Cell, beginCell, Dictionary} from "ton-core";
 import { ItemMetaDataKeys, buildOnChainMetadataCell, encodeOffChainContent } from "./nftContent";
+import crypto from 'crypto';
 
 export type RoyaltyParams = {
     royaltyFactor: number;
@@ -8,37 +9,45 @@ export type RoyaltyParams = {
 };
 
 export type NftCollectionData = {
+    collectionContent: string;
     ownerAddress: Address;
     nextItemIndex: number | bigint;
-    collectionContent: string;
     commonContent: string;
     nftItemCode: Cell;
     royaltyParams: RoyaltyParams;
 };
 
 export function buildNftCollectionDataCell(data: NftCollectionData): Cell {
-    let dataCell = beginCell();
+    const collectionContent = beginCell()
+        .storeUint(1, 8)
+        .storeStringTail(data.collectionContent)
+        .endCell()
 
-    dataCell.storeAddress(data.ownerAddress);
-    dataCell.storeUint(data.nextItemIndex, 64);
+    let nftCommonContent;
+    if(data.commonContent == '') {
+        nftCommonContent = beginCell().endCell();
+    } else {
+        nftCommonContent = beginCell().storeStringTail(data.commonContent).endCell();
+    }
 
-    let contentCell = beginCell();
-    let collectionContent = encodeOffChainContent(data.collectionContent);
+    const contentCell = beginCell()
+        .storeRef(collectionContent)
+        .storeRef(nftCommonContent)
+        .endCell();
 
-    let commonContent = beginCell();
-    commonContent.storeStringTail(data.commonContent);
+    const royaltyCell = beginCell()
+        .storeUint(data.royaltyParams.royaltyFactor, 16)
+        .storeUint(data.royaltyParams.royaltyBase, 16)
+        .storeAddress(data.royaltyParams.royaltyAddress)
+        .endCell();
 
-    contentCell.storeRef(collectionContent);
-    contentCell.storeRef(commonContent);
-    dataCell.storeRef(contentCell);
+    const collectionData = beginCell()
+        .storeAddress(data.ownerAddress)
+        .storeUint(data.nextItemIndex, 64)
+        .storeRef(contentCell)
+        .storeRef(data.nftItemCode)
+        .storeRef(royaltyCell)
+        .endCell();
 
-    dataCell.storeRef(data.nftItemCode);
-
-    let royaltyCell = beginCell();
-    royaltyCell.storeUint(data.royaltyParams.royaltyFactor, 16);
-    royaltyCell.storeUint(data.royaltyParams.royaltyBase, 16);
-    royaltyCell.storeAddress(data.royaltyParams.royaltyAddress);
-    dataCell.storeRef(royaltyCell);
-
-    return dataCell.endCell();
+    return collectionData;
 }
