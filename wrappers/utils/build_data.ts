@@ -22,7 +22,7 @@ export function buildOnchainMetadata(data: {
     image: string;
     status: string;
     amount: string;
-    technical_assigment: string;
+    technical_assignment: string;
     starting_unix_time: string;
     ending_unix_time: string;
     creation_unix_time: string;
@@ -41,7 +41,7 @@ export function buildOnchainMetadata(data: {
         + `${data.freelancer_addr == '' ? 'not assigned' : data.freelancer_addr}` +
         ' • Creation time: ' + data.creation_unix_time + ' • To be started at: ' + data.starting_unix_time +
         ' • To be terminated at: ' + data.ending_unix_time + ' • Technical assignment (TON Storage): '
-        + data.technical_assigment;
+        + data.technical_assignment;
 
     Object.entries(data).forEach(([key, value]) => {
         dict.set(sha256Hash(key), beginCell()

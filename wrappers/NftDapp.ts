@@ -90,10 +90,10 @@ export class NftDapp implements Contract {
         const metadataDict = buildOnchainMetadata({
             name: 'Some Order',
             description: 'Some Order Desription',
-            image: 'tonstorage://D130F695FB5446FE9F90514A1F17C2A70D1E85FA8FD56FCD067E6C847BDB5716/',
+            image: 'tonstorage://B9C487EE13678E60C95930628460E8EB9AEBC629BEE41B501C6C1A70B9012BD4/task.jpg',
             status: 'Active',
             amount: '1000',
-            technical_assigment: 'https://whales.infura-ipfs.io/ipfs/QmQ5QiuLBEmDdQmdWcEEh2rsW53KWahc63xmPVBUSp4teG/3880.png',
+            technical_assignment: 'https://whales.infura-ipfs.io/ipfs/QmQ5QiuLBEmDdQmdWcEEh2rsW53KWahc63xmPVBUSp4teG/3880.png',
             starting_unix_time: '1692831600',
             ending_unix_time: '1692831600',
             creation_unix_time: '1692831600',

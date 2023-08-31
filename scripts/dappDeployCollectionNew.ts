@@ -15,7 +15,7 @@ export async function run(provider: NetworkProvider, args: string[]) {
     const collectionDataCell = buildNftCollectionDataCell({
         collectionName: 'Collection with onchain',
         collectionDescription: 'onchain meta onchain meta',
-        collectionImageUrl: 'https://tonbyte.com/gateway/DEEEA8AF221A10E1E0057768499E6245FD8CC068AB8B73BD5BB50E92F0734773',
+        collectionImageUrl: 'https://tonbyte.com/gateway/B9C487EE13678E60C95930628460E8EB9AEBC629BEE41B501C6C1A70B9012BD4/collection.jpg',
         ownerAddress: dappAddress,
         nextItemIndex: 0,
         commonContent: '',
