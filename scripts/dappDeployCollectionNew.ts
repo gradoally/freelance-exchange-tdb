@@ -13,7 +13,9 @@ export async function run(provider: NetworkProvider, args: string[]) {
     const nftDapp = provider.open(NftDapp.createFromAddress(dappAddress));
 
     const collectionDataCell = buildNftCollectionDataCell({
-        collectionContent: '',
+        collectionName: 'Collection with onchain',
+        collectionDescription: 'onchain meta onchain meta',
+        collectionImageUrl: 'https://tonbyte.com/gateway/DEEEA8AF221A10E1E0057768499E6245FD8CC068AB8B73BD5BB50E92F0734773',
         ownerAddress: dappAddress,
         nextItemIndex: 0,
         commonContent: '',

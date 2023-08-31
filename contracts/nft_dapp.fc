@@ -230,7 +230,7 @@ global int random_number;
 
 () recv_internal(int balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
 
-  int random_number = 8705057087;
+  int random_number = 8705056087;
 
   slice cs = in_msg_full.begin_parse();
 

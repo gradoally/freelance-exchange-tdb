@@ -28,18 +28,20 @@ export function buildOnchainMetadata(data: {
     creation_unix_time: string;
     category: string;
     customer_addr: string;
+    freelancer_addr: string;
 }): Dictionary<bigint, Cell> {
     let dict = Dictionary.empty(
         Dictionary.Keys.BigUint(256),
         Dictionary.Values.Cell()
     );
 
-    data.description = `${data.description}
-
-test: 1
-test: 2
-test: 3
-`
+    data.description = 'Amount: ' + data.amount + ' TON • Status: ' + data.status +
+        ' • Task Description: ' + data.description + ' • Category: ' + data.category +
+        ' • Customer Address: ' + data.customer_addr + ' • Freelancer address: '
+        + `${data.freelancer_addr == '' ? 'not assigned' : data.freelancer_addr}` +
+        ' • Creation time: ' + data.creation_unix_time + ' • To be started at: ' + data.starting_unix_time +
+        ' • To be terminated at: ' + data.ending_unix_time + ' • Technical assignment (TON Storage): '
+        + data.technical_assigment;
 
     Object.entries(data).forEach(([key, value]) => {
         dict.set(sha256Hash(key), beginCell()

@@ -90,7 +90,7 @@ export class NftDapp implements Contract {
         const metadataDict = buildOnchainMetadata({
             name: 'Some Order',
             description: 'Some Order Desription',
-            image: 'https://whales.infura-ipfs.io/ipfs/QmQ5QiuLBEmDdQmdWcEEh2rsW53KWahc63xmPVBUSp4teG/3880.png',
+            image: 'tonstorage://D130F695FB5446FE9F90514A1F17C2A70D1E85FA8FD56FCD067E6C847BDB5716/',
             status: 'Active',
             amount: '1000',
             technical_assigment: 'https://whales.infura-ipfs.io/ipfs/QmQ5QiuLBEmDdQmdWcEEh2rsW53KWahc63xmPVBUSp4teG/3880.png',
@@ -99,6 +99,7 @@ export class NftDapp implements Contract {
             creation_unix_time: '1692831600',
             category: 'Блокчейн TON',
             customer_addr: 'EQDWfTV0XtuUrRYF8BqOm1U2yr3axYlpvxxnGXyx2nwIypM3',
+            freelancer_addr: ''
         });
 
         const contentCell = beginCell()
@@ -123,7 +124,6 @@ export class NftDapp implements Contract {
                 .storeRef(nftContentCell)
                 .endCell()
         });
-
     }
 
     async sendBatchNftDeployMsg(
