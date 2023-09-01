@@ -94,9 +94,9 @@ export class NftDapp implements Contract {
             status: 'Active',
             amount: '1000',
             technical_assignment: 'https://whales.infura-ipfs.io/ipfs/QmQ5QiuLBEmDdQmdWcEEh2rsW53KWahc63xmPVBUSp4teG/3880.png',
-            starting_unix_time: '1692831600',
-            ending_unix_time: '1692831600',
-            creation_unix_time: '1692831600',
+            starting_unix_time: 1692831600,
+            ending_unix_time: 1692831600,
+            creation_unix_time: 1692831600,
             category: 'Блокчейн TON',
             customer_addr: 'EQDWfTV0XtuUrRYF8BqOm1U2yr3axYlpvxxnGXyx2nwIypM3',
             freelancer_addr: ''

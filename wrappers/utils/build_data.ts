@@ -12,8 +12,26 @@ function sha256Hash(input: string): bigint {
     hash.update(input);
     const hashBuffer = hash.digest();
     const hashHex = hashBuffer.toString('hex');
-    const numericHash = BigInt('0x' + hashHex);
-    return numericHash;
+    return BigInt('0x' + hashHex);
+}
+
+function unixToFriendly(timestamp: number): string {
+    const date = new Date(timestamp * 1000);
+
+    const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+        timeZoneName: 'longOffset',
+    };
+
+    const englishLocale = 'en-US';
+    options.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return `${date.toLocaleDateString(englishLocale, options)}`;
 }
 
 export function buildOnchainMetadata(data: {
@@ -23,9 +41,9 @@ export function buildOnchainMetadata(data: {
     status: string;
     amount: string;
     technical_assignment: string;
-    starting_unix_time: string;
-    ending_unix_time: string;
-    creation_unix_time: string;
+    starting_unix_time: number;
+    ending_unix_time: number;
+    creation_unix_time: number;
     category: string;
     customer_addr: string;
     freelancer_addr: string;
@@ -39,14 +57,15 @@ export function buildOnchainMetadata(data: {
         ' • Task Description: ' + data.description + ' • Category: ' + data.category +
         ' • Customer Address: ' + data.customer_addr + ' • Freelancer address: '
         + `${data.freelancer_addr == '' ? 'not assigned' : data.freelancer_addr}` +
-        ' • Creation time: ' + data.creation_unix_time + ' • To be started at: ' + data.starting_unix_time +
-        ' • To be terminated at: ' + data.ending_unix_time + ' • Technical assignment (TON Storage): '
+        ' • Creation time: ' + unixToFriendly(data.creation_unix_time) + ' • To be started at: '
+        + unixToFriendly(data.starting_unix_time) + ' • To be terminated at: ' +
+        unixToFriendly(data.ending_unix_time) + ' • Technical assignment (TON Storage): '
         + data.technical_assignment;
 
     Object.entries(data).forEach(([key, value]) => {
         dict.set(sha256Hash(key), beginCell()
             .storeUint(ONCHAIN_CONTENT_PREFIX, 8)
-            .storeStringTail(value)
+            .storeStringTail(typeof value === 'number' ? `${value}` : value)
             .endCell());
     });
 
