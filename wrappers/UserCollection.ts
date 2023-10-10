@@ -1,6 +1,6 @@
 import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from 'ton-core';
 
-export type OrderCollectionConfig = {
+export type UserCollectionConfig = {
     ownerAddress: Address;
     nextItemIndex: number | bigint;
     content: Cell;
@@ -8,27 +8,27 @@ export type OrderCollectionConfig = {
     royaltyParams: Cell;
 };
 
-export function orderCollectionConfigToCell(config: OrderCollectionConfig): Cell {
+export function userCollectionConfigToCell(config: UserCollectionConfig): Cell {
     return beginCell()
-            .storeAddress(config.ownerAddress)
-            .storeUint(config.nextItemIndex, 64)
-            .storeRef(config.content)
-            .storeRef(config.nftItemCode)
-            .storeRef(config.royaltyParams)
-        .endCell();
+        .storeAddress(config.ownerAddress)
+        .storeUint(config.nextItemIndex, 64)
+        .storeRef(config.content)
+        .storeRef(config.nftItemCode)
+        .storeRef(config.royaltyParams)
+    .endCell();
 }
 
-export class OrderCollection implements Contract {
+export class UserCollection implements Contract {
     constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
 
     static createFromAddress(address: Address) {
-        return new OrderCollection(address);
+        return new UserCollection(address);
     }
 
-    static createFromConfig(config: OrderCollectionConfig, code: Cell, workchain = 0) {
-        const data = orderCollectionConfigToCell(config);
+    static createFromConfig(config: UserCollectionConfig, code: Cell, workchain = 0) {
+        const data = userCollectionConfigToCell(config);
         const init = { code, data };
-        return new OrderCollection(contractAddress(workchain, init), init);
+        return new UserCollection(contractAddress(workchain, init), init);
     }
 
     async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {

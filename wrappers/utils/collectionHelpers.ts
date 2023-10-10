@@ -1,5 +1,4 @@
 import {Address, Cell, beginCell, Dictionary} from "ton-core";
-import { ItemMetaDataKeys, buildOnChainMetadataCell, encodeOffChainContent } from "./nftContent";
 import crypto from 'crypto';
 
 function sha256Hash(input: string): bigint {

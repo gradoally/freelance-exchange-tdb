@@ -1,18 +1,14 @@
-import { Address, toNano } from 'ton-core';
-import { NftDapp } from '../wrappers/NftDapp';
+import { Address } from 'ton-core';
+import { Master } from '../wrappers/Master';
 import { NetworkProvider } from '@ton-community/blueprint';
 
 export async function run(provider: NetworkProvider, args: string[]) {
-    const ui = provider.ui();
 
-    const address = Address.parse(args.length > 0 ? args[0] : await ui.input('Dapp address'));
+    const masterAddress = Address.parse('');
 
-    const nftDapp = provider.open(NftDapp.createFromAddress(address));
+    const master = provider.open(Master.createFromAddress(masterAddress));
 
-        await nftDapp.sendDestroySbtMsg(provider.sender(), {
-            queryId: Date.now(),
-            itemAddress: Address.parse("EQCIdOdc6__fo1oqwBTaXLEg0RawVanTMe8ahLpZYm4RxffR")
-        });
-
-    ui.write('Destroyed successfully!');
+    await master.sendDestroySbt(provider.sender(), {
+        itemAddress: Address.parse('')
+    });
 }

@@ -2,21 +2,11 @@ import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, 
 import { Opcodes } from './utils/opCodes';
 
 export type AdminCollectionConfig = {
-    ownerAddress: Address;
-    nextItemIndex: number;
-    content: Cell;
-    nftItemCode: Cell;
-    royaltyParams: Cell;
+    collectionData: Cell;
 };
 
 export function adminCollectionConfigToCell(config: AdminCollectionConfig): Cell {
-    return beginCell()
-            .storeAddress(config.ownerAddress)
-            .storeUint(config.nextItemIndex, 64)
-            .storeRef(config.content)
-            .storeRef(config.nftItemCode)
-            .storeRef(config.royaltyParams)
-        .endCell();
+    return config.collectionData
 }
 
 export class AdminCollection implements Contract {

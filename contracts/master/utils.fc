@@ -1,0 +1,14 @@
+slice calculate_collection_address(cell state_init) inline {
+  return begin_cell().store_uint(4, 3)
+                  .store_int(workchain, 8)
+                  .store_uint(cell_hash(state_init), 256)
+                .end_cell().begin_parse();
+}
+
+slice return_collection_addr_by_id (int collection_id) inline {
+  load_data();
+  (slice value, int f) = udict_get?(storage::collections, 8, collection_id);
+  throw_unless(666, f);
+
+  return value;
+}

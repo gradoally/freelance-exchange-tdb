@@ -1,11 +1,8 @@
 import { beginCell, Cell, Address } from "ton";
 import { Dictionary } from "ton-core";
-import { sha256_sync } from "ton-crypto"
 import crypto from "crypto";
 
-
 const ONCHAIN_CONTENT_PREFIX = 0x00;
-const SNAKE_PREFIX = 0x00;
 
 function sha256Hash(input: string): bigint {
     const hash = crypto.createHash('sha256');
@@ -34,7 +31,7 @@ function unixToFriendly(timestamp: number): string {
     return `${date.toLocaleDateString(englishLocale, options)}`;
 }
 
-export function buildOnchainMetadata(data: {
+export function buildOrderOnchainMetadata(data: {
     name: string;
     description: string;
     image: string;
@@ -61,6 +58,57 @@ export function buildOnchainMetadata(data: {
         + unixToFriendly(data.starting_unix_time) + ' • To be terminated at: ' +
         unixToFriendly(data.ending_unix_time) + ' • Technical assignment (TON Storage): '
         + data.technical_assignment;
+
+    Object.entries(data).forEach(([key, value]) => {
+        dict.set(sha256Hash(key), beginCell()
+            .storeUint(ONCHAIN_CONTENT_PREFIX, 8)
+            .storeStringTail(typeof value === 'number' ? `${value}` : value)
+            .endCell());
+    });
+
+    return dict;
+}
+
+export function buildAdminOnchainMetadata(data: {
+    name: string;
+    image: string;
+    description: string;
+    telegram: string;
+}): Dictionary<bigint, Cell> {
+    let dict = Dictionary.empty(
+        Dictionary.Keys.BigUint(256),
+        Dictionary.Values.Cell()
+    );
+
+    data.description = 'Admin of Reach. ' + 'Telegram ' + data.telegram
+
+    Object.entries(data).forEach(([key, value]) => {
+        dict.set(sha256Hash(key), beginCell()
+            .storeUint(ONCHAIN_CONTENT_PREFIX, 8)
+            .storeStringTail(typeof value === 'number' ? `${value}` : value)
+            .endCell());
+    });
+
+    return dict;
+}
+
+export function buildUserOnchainMetadata(data: {
+    name: string;
+    image: string;
+    description: string;
+    telegram: string;
+    bio: string;
+    site: string;
+    portfolio: string;
+    resume: string;
+    specialization: string;
+}): Dictionary<bigint, Cell> {
+    let dict = Dictionary.empty(
+        Dictionary.Keys.BigUint(256),
+        Dictionary.Values.Cell()
+    );
+
+    data.description = 'User of Reach. ' + 'Telegram: ' + data.telegram
 
     Object.entries(data).forEach(([key, value]) => {
         dict.set(sha256Hash(key), beginCell()

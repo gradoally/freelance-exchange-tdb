@@ -1,6 +1,3 @@
-;;
-;;  TON SBT-Editable Item Smart Contract
-;;
 #pragma version >=0.4.0;
 
 #include "./imports/stdlib.fc";
@@ -23,7 +20,7 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
 ;;  MsgAddressInt editor_address
 
 
-(int, int, slice, slice, cell, slice) load_data() inline_ref {
+(int, int, slice, slice, cell, slice) load_data() inline {
     slice ds = get_data().begin_parse();
     var (index, collection_address) = (ds~load_uint(64), ds~load_msg_addr());
     if (ds.slice_bits() > 0) {
@@ -33,14 +30,14 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     }
 }
 
-() store_data(int index, slice collection_address, slice owner_address, cell content, slice editor_address) impure {
+() store_data(int index, slice collection_address, slice owner_address, cell content, slice editor_address) impure inline {
     set_data(
         begin_cell()
-        .store_uint(index, 64)
-        .store_slice(collection_address)
-        .store_slice(owner_address)
-        .store_ref(content)
-        .store_slice(editor_address)
+            .store_uint(index, 64)
+            .store_slice(collection_address)
+            .store_slice(owner_address)
+            .store_ref(content)
+            .store_slice(editor_address)
         .end_cell()
     );
 }
@@ -58,12 +55,12 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     if (~ builder_null?(payload)) {
         msg = msg.store_builder(payload);
     }
-
+    
     send_raw_message(msg.end_cell(), send_mode);
 }
 
 () transfer_ownership(int my_balance, int index, slice collection_address, slice owner_address,
-slice editor_address, cell content, slice sender_address, int query_id, slice in_msg_body, int fwd_fees) impure inline {
+        slice editor_address, cell content, slice sender_address, int query_id, slice in_msg_body, int fwd_fees) impure inline {
 
     throw_unless(401, equal_slices(sender_address, owner_address));
 
@@ -97,7 +94,7 @@ slice editor_address, cell content, slice sender_address, int query_id, slice in
 }
 
 () transfer_editorship(int my_balance, int index, slice collection_address, slice owner_address,
-slice editor_address, cell content, slice sender_address, int query_id, slice in_msg_body, int fwd_fees) impure inline {
+        slice editor_address, cell content, slice sender_address, int query_id, slice in_msg_body, int fwd_fees) impure inline {
 
     throw_unless(401, equal_slices(sender_address, editor_address));
 
@@ -202,19 +199,76 @@ slice editor_address, cell content, slice sender_address, int query_id, slice in
     }
 
     if (op == op::transfer) {
-
         transfer_ownership(my_balance, index, collection_address, owner_address, editor_address, content, sender_address, query_id, in_msg_body, fwd_fee);
-
         return ();
+    }
+
+
+    ;; Second order step: admin changes the order status from "On moderation" to "Active"
+    if (op == op::change_status_from_moderation_to_active) {
+
+        throw_unless(30, check_sender(actor::admin));
+        throw_unless(30, check_order_status(status::moderation));
+
+        ;; nessesary actions
+
+    }
+
+    ;; Third order step: users send responses to the NFT, which are recorded in the dictionary with data
+    if (op == op::add_response_to_task) {
+
+        throw_if(30, check_sender(actor::customer));
+        throw_unless(333, check_order_status(status::active));
+
+        ;; nessesary actions
+
+    }
+
+    ;; Fourth order step: customer assigns a user to execute the order and in the same transaction sends the order amount to the contract (order status becomes "In Progress")
+    if (op == op::assign_user_to_task) {
+
+        throw_unless(30, check_sender(actor::customer));
+        throw_unless(31, check_order_status(status::active));
+
+        ;; nessesary actions
+        
+    }
+
+    ;; Fifth order step: user sends transaction about successful fulfillment of task
+    if (op == op::task_completed) {
+
+        throw_unless(30, check_sender(actor::freelancer));
+        throw_unless(31, check_order_status(status::in-progress));
+
+        ;; nessesary actions
+
+    }
+
+    ;; Sixth order step: the customer either confirms the fulfillment of the order and sends a transaction to the smart contract, as a result of which the money is transferred to the executor, or sends the order to arbitration
+    if (op == op::customer_feedback) {
+
+        throw_unless(30, check_sender(actor::customer));
+        throw_unless(31, check_order_status(status::awaiting-payment));
+
+        ;; nessesary actions
+        
+    }
+
+    ;; Seventh order step (optional): NFT admin owners decide the outcome of the arbitration and either return the amount to the customer, or transfer the payment to the executor, or split the budget - part to the executor, part to the customer
+    if (op == op::arbitration_outcome) {
+
+        throw_unless(30, check_sender(actor::admin));
+        throw_unless(31, check_order_status(status::on-arbitration));
+
+        ;; nessesary actions
+        
     }
 
     throw(0xffff);
 }
-
 ;;
 ;;  GET Methods
 ;;
-
 slice get_editor_address() method_id {
     (_, _, _, _, _, slice editor_address) = load_data();
     return editor_address;
