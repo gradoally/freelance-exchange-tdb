@@ -11,9 +11,9 @@
 #pragma version >=0.4.0;
 #include "imports/stdlib.fc";
 #include "imports/messages.fc";
-#include "utils/op-codes.fc";
-#include "utils/constants.fc";
-#include "utils/params.fc";
+#include "imports/op-codes.fc";
+#include "imports/constants.fc";
+#include "imports/params.fc";
 
 (slice, int, cell, cell, cell) load_data() inline {
     var ds = get_data().begin_parse();

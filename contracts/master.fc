@@ -9,18 +9,6 @@
 #include "master/admin-calls.fc";
 #include "master/utils.fc";
 
-() deploy_collection (cell collection_code, cell collection_data) impure inline {
-  load_data();
-  cell state_init = (generate_init_state_with_data_no_library(collection_code, collection_data)).end_cell();
-  slice collection_address = calculate_collection_address(state_init);
-
-  messages::send_with_stateinit(0, collection_address, state_init, (begin_cell().end_cell()), CARRY_REMAINING_GAS);
-
-  storage::collections~udict_set(8, storage::next_collection_index, collection_address);
-  storage::next_collection_index += 1;
-  save_data();
-}
-
 () deploy_item (int collection_id, int query_id, int item_index, int amount, cell nft_content) impure inline {
   slice collection_address = return_collection_addr_by_id(collection_id);
   cell msg = begin_cell()

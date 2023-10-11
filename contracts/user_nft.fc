@@ -2,10 +2,9 @@
 
 #include "imports/stdlib.fc";
 #include "imports/messages.fc";
-#include "utils/constants.fc";
-#include "utils/params.fc";
-#include "utils/flags.fc";
-#include "utils/op-codes.fc";
+#include "imports/constants.fc";
+#include "imports/params.fc";
+#include "imports/op-codes.fc";
 
 int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
 ;;
@@ -86,7 +85,7 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
         op = in_msg_body~load_uint(32);
 
         if (op == op::ownership_proof) {
-            send_msg(flag::regular(), owner_address, ZERO_AMOUNT, op::ownership_proof_bounced, query_id, null(), CARRY_REMAINING_GAS);
+            send_msg(0x10, owner_address, 0, op::ownership_proof_bounced, query_id, null(), CARRY_REMAINING_GAS);
         }
         return ();
     }
@@ -108,7 +107,7 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
             msg = msg.store_ref(content);
         }
 
-        send_msg(flag::regular() | flag::bounce(), dest, ZERO_AMOUNT, op::owner_info, query_id, msg, CARRY_REMAINING_GAS);
+        send_msg(0x10, dest, 0, op::owner_info, query_id, msg, CARRY_REMAINING_GAS);
         return ();
     }
     if (op == op::prove_ownership) {
@@ -129,19 +128,19 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
             msg = msg.store_ref(content);
         }
 
-        send_msg(flag::regular() | flag::bounce(), dest, ZERO_AMOUNT, op::ownership_proof, query_id, msg, CARRY_REMAINING_GAS);
+        send_msg(0x10, dest, 0, op::ownership_proof, query_id, msg, CARRY_REMAINING_GAS);
         return ();
     }
     if (op == op::get_static_data) {
         var msg = begin_cell().store_uint(index, 256).store_slice(collection_address);
 
-        send_msg(flag::regular(), sender_address, ZERO_AMOUNT, op::report_static_data, query_id, msg, CARRY_REMAINING_GAS);
+        send_msg(0x10, sender_address, 0, op::report_static_data, query_id, msg, CARRY_REMAINING_GAS);
         return ();
     }
     if (op == op::destroy) {
         throw_unless(401, equal_slices(owner_address, sender_address));
 
-        send_msg(flag::regular(), sender_address, ZERO_AMOUNT, op::excesses, query_id, null(), CARRY_ALL_BALANCE);
+        send_msg(0x10, sender_address, 0, op::excesses, query_id, null(), CARRY_ALL_BALANCE);
 
         owner_address = null_addr();
         authority_address = null_addr();
@@ -162,7 +161,7 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
 
         raw_reserve(min_tons_for_storage(), 0);
 
-        send_msg(flag::regular(), sender_address, ZERO_AMOUNT, op::excesses, query_id, null(), CARRY_ALL_BALANCE);
+        send_msg(0x10, sender_address, 0, op::excesses, query_id, null(), CARRY_ALL_BALANCE);
         return ();
     }
     if (op == op::edit_content) { ;; owner can change content and dns records

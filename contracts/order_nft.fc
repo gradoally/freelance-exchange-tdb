@@ -1,11 +1,10 @@
 #pragma version >=0.4.0;
 
-#include "./imports/stdlib.fc";
-#include "./imports/messages.fc";
-#include "./utils/constants.fc";
-#include "./utils/params.fc";
-#include "./utils/flags.fc";
-#include "./utils/op-codes.fc";
+#include "imports/stdlib.fc";
+#include "imports/messages.fc";
+#include "imports/constants.fc";
+#include "imports/params.fc";
+#include "imports/op-codes.fc";
 
 
 
@@ -82,12 +81,12 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     throw_unless(402, rest_amount >= 0); ;; base nft spends fixed amount of gas, will not check for response
 
     if (forward_amount) {
-        send_msg(flag::regular(), new_owner_address, forward_amount, op::ownership_assigned,
+        send_msg(0x10, new_owner_address, forward_amount, op::ownership_assigned,
             query_id, begin_cell().store_slice(owner_address).store_slice(in_msg_body), PAID_EXTERNALLY);  ;; paying fees, revert on errors
     }
     if (need_response) {
         force_chain(response_destination);
-        send_msg(flag::regular(), response_destination, rest_amount, op::excesses, query_id, null(), PAID_EXTERNALLY); ;; paying fees, revert on errors
+        send_msg(0x10, response_destination, rest_amount, op::excesses, query_id, null(), PAID_EXTERNALLY); ;; paying fees, revert on errors
     }
 
     store_data(index, collection_address, new_owner_address, content, editor_address);
@@ -116,12 +115,12 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     throw_unless(402, rest_amount >= 0);
 
     if (forward_amount) {
-        send_msg(flag::regular(), new_editor_address, forward_amount, op::editorship_assigned,
+        send_msg(0x10, new_editor_address, forward_amount, op::editorship_assigned,
             query_id, begin_cell().store_slice(editor_address).store_slice(in_msg_body), PAID_EXTERNALLY);  ;; paying fees, revert on errors
     }
     if (need_response) {
         force_chain(response_destination);
-        send_msg(flag::regular(), response_destination, rest_amount, op::excesses, query_id, null(), PAID_EXTERNALLY);
+        send_msg(0x10, response_destination, rest_amount, op::excesses, query_id, null(), PAID_EXTERNALLY);
     }
 
     store_data(index, collection_address, owner_address, content, new_editor_address);
@@ -160,7 +159,7 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     if (op == op::get_static_data) {
         var msg = begin_cell().store_uint(index, 256).store_slice(collection_address);
 
-        send_msg(flag::regular(), sender_address, ZERO_AMOUNT, op::report_static_data, query_id, msg, CARRY_REMAINING_GAS);
+        send_msg(0x10, sender_address, 0, op::report_static_data, query_id, msg, CARRY_REMAINING_GAS);
         return ();
     }
 
@@ -207,8 +206,8 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     ;; Second order step: admin changes the order status from "On moderation" to "Active"
     if (op == op::change_status_from_moderation_to_active) {
 
-        throw_unless(30, check_sender(actor::admin));
-        throw_unless(30, check_order_status(status::moderation));
+        ;; throw_unless(30, check_sender(actor::admin));
+        ;; throw_unless(30, check_order_status(status::moderation));
 
         ;; nessesary actions
 
@@ -217,8 +216,8 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     ;; Third order step: users send responses to the NFT, which are recorded in the dictionary with data
     if (op == op::add_response_to_task) {
 
-        throw_if(30, check_sender(actor::customer));
-        throw_unless(333, check_order_status(status::active));
+        ;; throw_if(30, check_sender(actor::customer));
+        ;; throw_unless(333, check_order_status(status::active));
 
         ;; nessesary actions
 
@@ -227,8 +226,8 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     ;; Fourth order step: customer assigns a user to execute the order and in the same transaction sends the order amount to the contract (order status becomes "In Progress")
     if (op == op::assign_user_to_task) {
 
-        throw_unless(30, check_sender(actor::customer));
-        throw_unless(31, check_order_status(status::active));
+        ;; throw_unless(30, check_sender(actor::customer));
+        ;; throw_unless(31, check_order_status(status::active));
 
         ;; nessesary actions
         
@@ -237,8 +236,8 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     ;; Fifth order step: user sends transaction about successful fulfillment of task
     if (op == op::task_completed) {
 
-        throw_unless(30, check_sender(actor::freelancer));
-        throw_unless(31, check_order_status(status::in-progress));
+        ;; throw_unless(30, check_sender(actor::freelancer));
+        ;; throw_unless(31, check_order_status(status::in-progress));
 
         ;; nessesary actions
 
@@ -247,8 +246,8 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     ;; Sixth order step: the customer either confirms the fulfillment of the order and sends a transaction to the smart contract, as a result of which the money is transferred to the executor, or sends the order to arbitration
     if (op == op::customer_feedback) {
 
-        throw_unless(30, check_sender(actor::customer));
-        throw_unless(31, check_order_status(status::awaiting-payment));
+        ;; throw_unless(30, check_sender(actor::customer));
+        ;; throw_unless(31, check_order_status(status::awaiting-payment));
 
         ;; nessesary actions
         
@@ -257,8 +256,8 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     ;; Seventh order step (optional): NFT admin owners decide the outcome of the arbitration and either return the amount to the customer, or transfer the payment to the executor, or split the budget - part to the executor, part to the customer
     if (op == op::arbitration_outcome) {
 
-        throw_unless(30, check_sender(actor::admin));
-        throw_unless(31, check_order_status(status::on-arbitration));
+        ;; throw_unless(30, check_sender(actor::admin));
+        ;; throw_unless(31, check_order_status(status::on-arbitration));
 
         ;; nessesary actions
         

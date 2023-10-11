@@ -1,3 +1,5 @@
+#include "utils.fc";
+
 () handle_admin_messages(int op, int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
     
     if (op == op::deploy_collection) {
