@@ -63,7 +63,7 @@ describe('Master', () => {
                 royaltyAddress: master.address
             }
         });
-        
+
         const deployAdminCollectionResult = await master.sendDeployCollection(deployer.getSender(), {
             collectionCode: await compile('AdminCollection'),
             collectionData: adminCollectionDataCell,
@@ -120,9 +120,9 @@ describe('Master', () => {
             success: true,
             deploy: true,
         });
-        
+
         const secondNextCollectionIndex = (await blockchain.getContract(master.address)).get('get_master_data').stackReader.skip(1).readNumber();
-        
+
         expect(secondNextCollectionIndex).toEqual(2);
 
         // Deploy orders collection (third)
@@ -176,7 +176,11 @@ describe('Master', () => {
 
     });
 
-    it('should deploy order', async () => {
+    it('should deploy user', async () => {
+
+    });
+
+    it('user should deploy order', async () => {
 
         const deployOrderResult = await master.sendDeployItem(first_user_wallet.getSender(), {
             itemIndex: 0,
