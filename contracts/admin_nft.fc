@@ -122,11 +122,6 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
                 .store_slice(owner_address)
                 .store_ref(body)
                 .store_uint(revoked_at, 64)
-                .store_uint(with_content, 1);
-
-        if (with_content != 0) {
-            msg = msg.store_ref(content);
-        }
 
         send_msg(0x10 | 0x18, dest, 0, op::ownership_proof, query_id, msg, CARRY_REMAINING_GAS);
         return ();

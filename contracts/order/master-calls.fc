@@ -1,0 +1,110 @@
+#include "../imports/op-codes.fc";
+#include "storage.fc";
+
+() handle_master_messages(int op, int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
+
+    slice cs = storage::content.begin_parse();
+
+    cell data = cs~load_dict();
+
+    (cell value, int f) = data.udict_get_ref?(256, "status"H);
+    throw_unless(135, f);
+
+    slice status = value.begin_parse();
+    status~skip_bits(8);
+
+    ;; Second order step: admin changes the order status from "On moderation" to "Active"
+    if (op == op::change_status_from_moderation_to_active) {
+
+        throw_unless(30, equal_slices(status, "On moderation"));
+
+        data~udict_set_ref(256, "status"H, begin_cell().store_uint(0, 8).store_slice("Active").end_cell());
+
+        storage::content = begin_cell().store_uint(0, 8).store_dict(data).end_cell();
+
+        store_data();
+        return ();
+    }
+
+    ;; Third order step: users send responses to the NFT, which are recorded in the dictionary with data
+    if (op == op::add_response_to_task) {
+
+        throw_unless(30, equal_slices(status, "Active"));
+
+        (int key, _, _) = storage::responses.udict_get_max?(16);
+
+        slice candidate = in_msg_body~load_msg_addr();
+        slice text = in_msg_body;
+
+        storage::responses~udict_set_ref(16, key + 1, begin_cell().store_slice(candidate).store_slice(text).end_cell());
+
+        storage::content = begin_cell().store_uint(0, 8).store_dict(data).end_cell();
+        
+        store_data();
+        return ();
+    }
+
+    ;; Fourth order step: customer assigns a user to execute the order and in the same transaction sends the order amount to the contract (order status becomes "In Progress")
+    if (op == op::assign_user_to_task) {
+
+        throw_unless(30, equal_slices(status, "Active"));
+
+        slice designated_freelancer = in_msg_body~load_msg_addr();
+
+        data~udict_set_ref(256, "freelancer_addr"H, begin_cell().store_uint(0, 8).store_slice(designated_freelancer).end_cell());
+        data~udict_set_ref(256, "status"H, begin_cell().store_uint(0, 8).store_slice("In progress").end_cell());
+        
+        storage::content = begin_cell().store_uint(0, 8).store_dict(data).end_cell();
+
+        store_data();
+        return ();
+    }
+
+    ;; Fifth order step: user sends transaction about successful fulfillment of task
+    if (op == op::task_completed) {
+
+        throw_unless(30, equal_slices(status, "In progress"));
+
+        data~udict_set_ref(256, "status"H, begin_cell().store_uint(0, 8).store_slice("Fulfilled").end_cell());
+
+        storage::content = begin_cell().store_uint(0, 8).store_dict(data).end_cell();
+
+        store_data();
+        return ();
+    }
+
+    ;; Sixth order step: the customer either confirms the fulfillment of the order and sends a transaction to the smart contract, as a result of which the money is transferred to the executor, or sends the order to arbitration
+    if (op == op::customer_feedback) {
+
+        throw_unless(30, equal_slices(status, "Fulfilled"));
+
+        if (in_msg_body~load_uint(1)) {
+            data~udict_set_ref(256, "status"H, begin_cell().store_uint(0, 8).store_slice("On arbitration").end_cell());
+        } else {
+            data~udict_set_ref(256, "status"H, begin_cell().store_uint(0, 8).store_slice("Completed").end_cell());
+        }
+        storage::content = begin_cell().store_uint(0, 8).store_dict(data).end_cell();
+
+        store_data();
+        return ();
+    }
+
+    ;; Seventh order step (optional): NFT admin owners decide the outcome of the arbitration and either return the amount to the customer, or transfer the payment to the executor, or split the budget - part to the executor, part to the customer
+    if (op == op::arbitration_outcome) {
+
+        ;; throw_unless(30, check_sender(actor::admin));
+        throw_unless(30, equal_slices(status, "On arbitration"));
+        
+
+        ;; nessesary actions
+        return ();
+    }
+
+    if (op == op::edit_content) {
+        storage::content = in_msg_body~load_ref();
+        store_data();
+        return ();
+    }
+
+    throw(0xffff);
+}

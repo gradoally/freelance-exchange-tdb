@@ -12,19 +12,19 @@ import {
 } from 'ton-core';
 
 import { Opcodes } from './utils/opCodes';
+import { collectionsDictValue } from './utils/customDictValue';
 
 export type MasterConfig = {
     ownerAddress: Address;
     nextCollectionIndex: number;
-    collectionsDict: Dictionary<number, Address>;
 };
 
 export function masterConfigToCell(config: MasterConfig): Cell {
     return beginCell()   
-          .storeAddress(config.ownerAddress)
-          .storeUint(config.nextCollectionIndex, 8)
-          .storeDict(config.collectionsDict)
-        .endCell();
+        .storeAddress(config.ownerAddress)
+        .storeUint(config.nextCollectionIndex, 8)
+        .storeDict(Dictionary.empty(Dictionary.Keys.Uint(8), collectionsDictValue))
+    .endCell();
 }
 
 export class Master implements Contract {
@@ -43,7 +43,7 @@ export class Master implements Contract {
     async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
         await provider.internal(via, {
             value,
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell().endCell(),
         });
     }
@@ -59,7 +59,7 @@ export class Master implements Contract {
 
         await provider.internal(via, {
             value: toNano('0.1'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.deployCollection, 32)
                 .storeUint(0, 64)
@@ -91,7 +91,7 @@ export class Master implements Contract {
 
         await provider.internal(via, {
             value: toNano('0.5'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.deployNftItem, 32)
                 .storeUint(0, 64)
@@ -115,7 +115,7 @@ export class Master implements Contract {
     ) {
         await provider.internal(via, {
             value: toNano('0.05'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.transferItem, 32)
                 .storeUint(0, 64)
@@ -141,7 +141,7 @@ export class Master implements Contract {
 
         await provider.internal(via, {
             value: toNano('0.05'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.editItemContent, 32)
                 .storeUint(0, 64)
@@ -160,7 +160,7 @@ export class Master implements Contract {
     ) {
         await provider.internal(via, {
             value: toNano('0.05'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.destroySbtItem, 32)
                 .storeUint(0, 64)
@@ -178,7 +178,7 @@ export class Master implements Contract {
     ) {
         await provider.internal(via, {
             value: toNano('0.05'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.withdrawFunds, 32)
                 .storeUint(0, 64)
@@ -196,7 +196,7 @@ export class Master implements Contract {
     ) {
         await provider.internal(via, {
             value: toNano('0.05'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
                 .storeUint(Opcodes.editDappCode, 32)
                 .storeUint(0, 64)

@@ -42,19 +42,20 @@ export function buildNftCollectionDataCell(data: NftCollectionData): Cell {
     const collectionContent = beginCell()
         .storeUint(0, 8)
         .storeDict(dict, Dictionary.Keys.BigUint(256), Dictionary.Values.Cell())
-        .endCell()
+    .endCell();
+
     const nftCommonContent = beginCell().endCell();
 
     const contentCell = beginCell()
         .storeRef(collectionContent)
         .storeRef(nftCommonContent)
-        .endCell();
+    .endCell();
 
     const royaltyCell = beginCell()
         .storeUint(data.royaltyParams.royaltyFactor, 16)
         .storeUint(data.royaltyParams.royaltyBase, 16)
         .storeAddress(data.royaltyParams.royaltyAddress)
-        .endCell();
+    .endCell();
 
     const collectionData = beginCell()
         .storeAddress(data.ownerAddress)
@@ -62,7 +63,7 @@ export function buildNftCollectionDataCell(data: NftCollectionData): Cell {
         .storeRef(contentCell)
         .storeRef(data.nftItemCode)
         .storeRef(royaltyCell)
-        .endCell();
+    .endCell();
 
     return collectionData;
 }

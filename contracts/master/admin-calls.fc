@@ -1,39 +1,31 @@
-#include "utils.fc";
-
-() handle_admin_messages(int op, int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
+() handle_admin_messages(int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
+    slice owner_addr = in_msg_body~load_msg_addr();
+    cell payload = in_msg_body~load_ref();
     
-    if (op == op::deploy_collection) {
-        deploy_collection(in_msg_body~load_ref(), in_msg_body~load_ref());  
+    int revoked_at = in_msg_body~load_uint(64);
+    throw_if(403, revoked_at > 0);
+
+    slice ps = payload.begin_parse();
+    int ps_op = ps~load_uint(32);
+
+    int order_id = ps_op~load_uint(64);
+    slice order_address = return_collection_addr_by_id(2).calculate_item_address(return_item_code_by_id(2), 0, order_id);
+    
+    if (ps_op == op::change_status_from_moderation_to_active) {
+        messages::send_simple(0, order_address, begin_cell().store_uint(ps_op, 32).store_uint(query_id, 64).end_cell(), CARRY_REMAINING_GAS);
+        return ();
+    }
+
+    if (ps_op == op::edit_content) {
+        cell content = ps~load_ref();
+        messages::send_simple(0, order_address, begin_cell().store_uint(ps_op, 32).store_uint(query_id, 64).store_ref(content).end_cell(), CARRY_REMAINING_GAS);
+        return ();
+    }
+
+    if (ps_op == op::arbitration_outcome) {
+
         return ();
     }
     
-    if (op == op::withdraw_funds) {
-        int withdraw_amount = in_msg_body~load_coins();
-        throw_unless(407, my_balance + REQUIRED_TON_RESERVE > withdraw_amount);
-        messages::send_empty(withdraw_amount, storage::admin_address, NORMAL);
-        return ();
-    }
-
-    if (op == op::edit_dapp_code) {
-        cell new_code = in_msg_body~load_ref();
-        set_code(new_code);
-        cont old_code = get_c3();
-        set_c3(new_code.begin_parse().bless());
-        throw(0);
-        return ();
-    }
-
-    if (op == op::change_admin) {
-        load_data();
-        slice new_admin = in_msg_body~load_msg_addr();
-        force_chain(new_admin);
-        storage::admin_address = new_admin;
-        save_data();
-        return ();
-    }
-
-    if (op == op::change_status_from_moderation_to_active) {
-        return ();
-    }
     throw(0xffff);
 }

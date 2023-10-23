@@ -63,7 +63,8 @@ export function buildOrderOnchainMetadata(data: {
         dict.set(sha256Hash(key), beginCell()
             .storeUint(ONCHAIN_CONTENT_PREFIX, 8)
             .storeStringTail(typeof value === 'number' ? `${value}` : value)
-            .endCell());
+            .endCell()
+        );
     });
 
     return dict;
