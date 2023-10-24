@@ -1,26 +1,52 @@
-slice calculate_collection_address(cell state_init) inline {
+slice calculate_smc_address(cell state_init) inline {
   return begin_cell().store_uint(4, 3)
                   .store_int(workchain, 8)
                   .store_uint(cell_hash(state_init), 256)
                 .end_cell().begin_parse();
 }
 
-slice return_collection_addr_by_id (int collection_id) inline {
+slice return_collection_addr_by_id(int collection_id) inline {
   load_data();
   (slice value, int f) = udict_get?(storage::collections, 8, collection_id);
   throw_unless(666, f);
 
-  return value;
+  return value~load_msg_addr();
+}
+
+cell return_item_code_by_id(int collection_id) inline {
+  load_data();
+  (slice value, int f) = udict_get?(storage::collections, 8, collection_id);
+  throw_unless(666, f);
+
+  value~load_msg_addr();
+  return value~load_ref();
 }
 
 () deploy_collection (cell collection_code, cell collection_data) impure inline {
   load_data();
   cell state_init = (generate_init_state_with_data_no_library(collection_code, collection_data)).end_cell();
-  slice collection_address = calculate_collection_address(state_init);
+  slice collection_address = calculate_smc_address(state_init);
 
   messages::send_with_stateinit(0, collection_address, state_init, (begin_cell().end_cell()), CARRY_REMAINING_GAS);
 
-  storage::collections~udict_set(8, storage::next_collection_index, collection_address);
+  slice ds = collection_data.begin_parse();
+  ds~load_msg_addr();
+  ds~skip_bits(64);
+  ds~load_ref();
+  cell item_code = ds~load_ref();
+  storage::collections~udict_set(8, storage::next_collection_index, 
+                begin_cell().store_slice(collection_address).store_ref(item_code).end_cell().begin_parse());
   storage::next_collection_index += 1;
   save_data();
+}
+
+slice calculate_item_address(slice collection_addr, cell item_code, int wc, int index) inline {
+  cell data = begin_cell().store_uint(index, 64).store_slice(collection_addr).end_cell();
+  cell state_init = begin_cell().store_uint(0, 2).store_dict(item_code).store_dict(data).store_uint(0, 1).end_cell();
+
+  return begin_cell()
+    .store_uint(4, 3)
+    .store_int(wc, 8)
+    .store_uint(cell_hash(state_init), 256)
+  .end_cell().begin_parse();
 }

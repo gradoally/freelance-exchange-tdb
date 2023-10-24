@@ -1,0 +1,39 @@
+#include "utils.fc";
+
+() handle_root_messages(int op, int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
+    
+    if (op == op::deploy_collection) {
+        deploy_collection(in_msg_body~load_ref(), in_msg_body~load_ref());  
+        return ();
+    }
+    
+    if (op == op::withdraw_funds) {
+        int withdraw_amount = in_msg_body~load_coins();
+        throw_unless(407, my_balance + REQUIRED_TON_RESERVE > withdraw_amount);
+        messages::send_empty(withdraw_amount, storage::root_address, NORMAL);
+        return ();
+    }
+
+    if (op == op::edit_dapp_code) {
+        cell new_code = in_msg_body~load_ref();
+        set_code(new_code);
+        cont old_code = get_c3();
+        set_c3(new_code.begin_parse().bless());
+        throw(0);
+        return ();
+    }
+
+    if (op == op::change_root) {
+        load_data();
+        slice new_root = in_msg_body~load_msg_addr();
+        force_chain(new_root);
+        storage::root_address = new_root;
+        save_data();
+        return ();
+    }
+
+    if (op == op::change_status_from_moderation_to_active) {
+        return ();
+    }
+    throw(0xffff);
+}

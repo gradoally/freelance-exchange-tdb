@@ -6,7 +6,9 @@
 #include "imports/constants.fc";
 #include "imports/params.fc";
 #include "master/storage.fc";
+#include "master/root-calls.fc";
 #include "master/admin-calls.fc";
+#include "master/user-calls.fc";
 #include "master/utils.fc";
 
 () deploy_item (int collection_id, int query_id, int item_index, int amount, cell nft_content) impure inline {
@@ -87,11 +89,6 @@
     return ();
   }
 
-  if (op == op::edit_item_content) {
-    edit_item_content(in_msg_body~load_msg_addr(), query_id, in_msg_body~load_ref());
-    return ();
-  }
-
   if (op == op::destroy_sbt_item) {
     destroy_sbt_item(in_msg_body~load_msg_addr(), query_id);
     return ();
@@ -102,8 +99,26 @@
     return ();
   }
 
-  if (equal_slices(sender_address, storage::admin_address)) {
-    handle_admin_messages(op, query_id, balance, msg_value, in_msg_body);
+  if (equal_slices(sender_address, storage::root_address)) {
+    handle_root_messages(op, query_id, balance, msg_value, in_msg_body);
+    return ();
+  }
+
+  ;; storage::collections:
+  ;; 0 -> Admin Collection
+  ;; 1 -> User Collection
+  ;; 2 -> Order Collection
+  if (op == op::ownership_proof) {
+    int id = in_msg_body~load_uint(256);
+
+    if (equal_slices(sender_address, return_collection_addr_by_id(0).calculate_item_address(return_item_code_by_id(0), 0, id))) {
+      handle_admin_messages(query_id, balance, msg_value, in_msg_body);
+    }
+
+    if (equal_slices(sender_address, return_collection_addr_by_id(1).calculate_item_address(return_item_code_by_id(1), 0, id))) {
+      handle_user_messages(query_id, balance, msg_value, in_msg_body);
+    }
+
     return ();
   }
 
@@ -112,6 +127,6 @@
 
 (slice, int, cell) get_master_data() method_id {
   load_data();
-  return (storage::admin_address, storage::next_collection_index, storage::collections);
+  return (storage::root_address, storage::next_collection_index, storage::collections);
 }
 

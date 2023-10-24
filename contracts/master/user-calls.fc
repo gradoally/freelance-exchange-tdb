@@ -1,0 +1,20 @@
+() handle_user_messages(int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
+    slice owner_addr = in_msg_body~load_msg_addr();
+    cell payload = in_msg_body~load_ref();
+    
+    int revoked_at = in_msg_body~load_uint(64);
+    throw_if(403, revoked_at > 0);
+
+    slice ps = payload.begin_parse();
+    int ps_op = ps~load_uint(32);
+    
+    if (ps_op == op::add_response_to_task) {
+        int order_id = in_msg_body~load_uint(64);
+        slice text = in_msg_body.slice_bits() > 0 ? in_msg_body : null();
+        slice order_address = return_collection_addr_by_id(2).calculate_item_address(return_item_code_by_id(2), 0, order_id);
+        messages::send_simple(0, order_address, begin_cell().store_uint(ps_op, 32)
+                            .store_uint(query_id, 64).store_slice(owner_addr).store_slice(text).end_cell(), CARRY_REMAINING_GAS);
+        return ();
+    }
+    throw(0xffff);
+}

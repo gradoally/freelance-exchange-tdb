@@ -1,45 +1,12 @@
-#pragma version >=0.4.0;
+#pragma version >=0.2.0;
 
 #include "imports/stdlib.fc";
-#include "imports/messages.fc";
-#include "imports/constants.fc";
 #include "imports/params.fc";
 #include "imports/op-codes.fc";
-
-
+#include "order/master-calls.fc";
+#include "order/storage.fc";
 
 int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
-;;
-;;  Storage
-;;
-;;  uint64 index
-;;  MsgAddressInt collection_address
-;;  MsgAddressInt owner_address
-;;  cell Content
-;;  MsgAddressInt editor_address
-
-
-(int, int, slice, slice, cell, slice) load_data() inline {
-    slice ds = get_data().begin_parse();
-    var (index, collection_address) = (ds~load_uint(64), ds~load_msg_addr());
-    if (ds.slice_bits() > 0) {
-        return (-1, index, collection_address, ds~load_msg_addr(), ds~load_ref(), ds~load_msg_addr());
-    } else {
-        return (0, index, collection_address, null(), null(), null()); ;; nft not initialized yet
-    }
-}
-
-() store_data(int index, slice collection_address, slice owner_address, cell content, slice editor_address) impure inline {
-    set_data(
-        begin_cell()
-            .store_uint(index, 64)
-            .store_slice(collection_address)
-            .store_slice(owner_address)
-            .store_ref(content)
-            .store_slice(editor_address)
-        .end_cell()
-    );
-}
 
 () send_msg(int flag, slice to_address, int amount, int op, int query_id, builder payload, int send_mode) impure inline {
 
@@ -58,8 +25,7 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     send_raw_message(msg.end_cell(), send_mode);
 }
 
-() transfer_ownership(int my_balance, int index, slice collection_address, slice owner_address,
-        slice editor_address, cell content, slice sender_address, int query_id, slice in_msg_body, int fwd_fees) impure inline {
+() transfer_ownership(int my_balance, slice owner_address, slice sender_address, int query_id, slice in_msg_body, int fwd_fees) impure inline {
 
     throw_unless(401, equal_slices(sender_address, owner_address));
 
@@ -82,18 +48,18 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
 
     if (forward_amount) {
         send_msg(0x10, new_owner_address, forward_amount, op::ownership_assigned,
-            query_id, begin_cell().store_slice(owner_address).store_slice(in_msg_body), PAID_EXTERNALLY);  ;; paying fees, revert on errors
+            query_id, begin_cell().store_slice(owner_address).store_slice(in_msg_body), 1);  ;; paying fees, revert on errors
     }
     if (need_response) {
         force_chain(response_destination);
-        send_msg(0x10, response_destination, rest_amount, op::excesses, query_id, null(), PAID_EXTERNALLY); ;; paying fees, revert on errors
+        send_msg(0x10, response_destination, rest_amount, op::excesses, query_id, null(), 1); ;; paying fees, revert on errors
     }
 
-    store_data(index, collection_address, new_owner_address, content, editor_address);
+    storage::owner_address = new_owner_address;
+    store_data();
 }
 
-() transfer_editorship(int my_balance, int index, slice collection_address, slice owner_address,
-        slice editor_address, cell content, slice sender_address, int query_id, slice in_msg_body, int fwd_fees) impure inline {
+() transfer_editorship(int my_balance, slice editor_address, slice sender_address, int query_id, slice in_msg_body, int fwd_fees) impure inline {
 
     throw_unless(401, equal_slices(sender_address, editor_address));
 
@@ -116,14 +82,15 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
 
     if (forward_amount) {
         send_msg(0x10, new_editor_address, forward_amount, op::editorship_assigned,
-            query_id, begin_cell().store_slice(editor_address).store_slice(in_msg_body), PAID_EXTERNALLY);  ;; paying fees, revert on errors
+            query_id, begin_cell().store_slice(editor_address).store_slice(in_msg_body), 1);  ;; paying fees, revert on errors
     }
     if (need_response) {
         force_chain(response_destination);
-        send_msg(0x10, response_destination, rest_amount, op::excesses, query_id, null(), PAID_EXTERNALLY);
+        send_msg(0x10, response_destination, rest_amount, op::excesses, query_id, null(), 1);
     }
 
-    store_data(index, collection_address, owner_address, content, new_editor_address);
+    storage::editor_address = new_editor_address;
+    store_data();
 }
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
@@ -143,13 +110,16 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
 
     int fwd_fee = muldiv(cs~load_coins(), 3, 2);
 
-    (int init?, int index, slice collection_address, slice owner_address, cell content, slice editor_address) = load_data();
+    load_data();
 
     if (~ init?) {
-        throw_unless(405, equal_slices(collection_address, sender_address));
+        throw_unless(405, equal_slices(storage::collection_address, sender_address));
 
-        store_data(index, collection_address, in_msg_body~load_msg_addr(), in_msg_body~load_ref(), in_msg_body~load_msg_addr());
+        storage::owner_address = in_msg_body~load_msg_addr();
+        storage::content = in_msg_body~load_ref();
+        storage::editor_address = in_msg_body~load_msg_addr();
 
+        store_data();
         return ();
     }
 
@@ -157,123 +127,36 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     int query_id = in_msg_body~load_uint(64);
 
     if (op == op::get_static_data) {
-        var msg = begin_cell().store_uint(index, 256).store_slice(collection_address);
+        var msg = begin_cell().store_uint(storage::index, 256).store_slice(storage::collection_address);
 
-        send_msg(0x10, sender_address, 0, op::report_static_data, query_id, msg, CARRY_REMAINING_GAS);
+        send_msg(0x10, sender_address, 0, op::report_static_data, query_id, msg, 64);
         return ();
     }
 
     if (op == op::transfer_editorship) {
-        transfer_editorship(my_balance, index, collection_address, owner_address, editor_address, content, sender_address, query_id, in_msg_body, fwd_fee);
-        return ();
-    }
-
-    if (op == op::edit_content) {
-        throw_unless(410, equal_slices(sender_address, editor_address));
-        store_data(index, collection_address, owner_address, in_msg_body~load_ref(), editor_address);
-        return ();
-    }
-
-    if (op == op::change_record) {
-        throw_unless(411, equal_slices(sender_address, owner_address));
-        int key = in_msg_body~load_uint(256);
-        int has_value = in_msg_body.slice_refs() > 0;
-
-        slice cs = content.begin_parse();
-        throw_unless(412, cs~load_uint(8) == 0); ;; data onchain tag
-        cell keyvalue_map = cs~load_dict();
-
-        if (has_value) {
-            cell value = in_msg_body~load_ref();
-
-            keyvalue_map~udict_set_ref(256, key, value);
-        } else {
-            keyvalue_map~udict_delete?(256, key);
-        }
-
-        content = begin_cell().store_uint(0, 8).store_dict(keyvalue_map).end_cell();
-
-        store_data(index, collection_address, owner_address, content, editor_address);
+        transfer_editorship(my_balance, storage::editor_address, sender_address, query_id, in_msg_body, fwd_fee);
         return ();
     }
 
     if (op == op::transfer) {
-        transfer_ownership(my_balance, index, collection_address, owner_address, editor_address, content, sender_address, query_id, in_msg_body, fwd_fee);
+        transfer_ownership(my_balance, storage::owner_address, sender_address, query_id, in_msg_body, fwd_fee);
         return ();
     }
 
-
-    ;; Second order step: admin changes the order status from "On moderation" to "Active"
-    if (op == op::change_status_from_moderation_to_active) {
-
-        ;; throw_unless(30, check_sender(actor::admin));
-        ;; throw_unless(30, check_order_status(status::moderation));
-
-        ;; nessesary actions
-
+    if (equal_slices(storage::editor_address, sender_address)) {
+        handle_master_messages(op, query_id, my_balance, msg_value, in_msg_body);
+        return ();
     }
-
-    ;; Third order step: users send responses to the NFT, which are recorded in the dictionary with data
-    if (op == op::add_response_to_task) {
-
-        ;; throw_if(30, check_sender(actor::customer));
-        ;; throw_unless(333, check_order_status(status::active));
-
-        ;; nessesary actions
-
-    }
-
-    ;; Fourth order step: customer assigns a user to execute the order and in the same transaction sends the order amount to the contract (order status becomes "In Progress")
-    if (op == op::assign_user_to_task) {
-
-        ;; throw_unless(30, check_sender(actor::customer));
-        ;; throw_unless(31, check_order_status(status::active));
-
-        ;; nessesary actions
-        
-    }
-
-    ;; Fifth order step: user sends transaction about successful fulfillment of task
-    if (op == op::task_completed) {
-
-        ;; throw_unless(30, check_sender(actor::freelancer));
-        ;; throw_unless(31, check_order_status(status::in-progress));
-
-        ;; nessesary actions
-
-    }
-
-    ;; Sixth order step: the customer either confirms the fulfillment of the order and sends a transaction to the smart contract, as a result of which the money is transferred to the executor, or sends the order to arbitration
-    if (op == op::customer_feedback) {
-
-        ;; throw_unless(30, check_sender(actor::customer));
-        ;; throw_unless(31, check_order_status(status::awaiting-payment));
-
-        ;; nessesary actions
-        
-    }
-
-    ;; Seventh order step (optional): NFT admin owners decide the outcome of the arbitration and either return the amount to the customer, or transfer the payment to the executor, or split the budget - part to the executor, part to the customer
-    if (op == op::arbitration_outcome) {
-
-        ;; throw_unless(30, check_sender(actor::admin));
-        ;; throw_unless(31, check_order_status(status::on-arbitration));
-
-        ;; nessesary actions
-        
-    }
-
     throw(0xffff);
 }
-;;
-;;  GET Methods
-;;
+
+
 slice get_editor_address() method_id {
-    (_, _, _, _, _, slice editor_address) = load_data();
-    return editor_address;
+    load_data();
+    return storage::editor_address;
 }
 
 (int, int, slice, slice, cell) get_nft_data() method_id {
-    (int init?, int index, slice collection_address, slice owner_address, cell content, _) = load_data();
-    return (init?, index, collection_address, owner_address, content);
+    load_data();
+    return (init?, storage::index, storage::collection_address, storage::owner_address, storage::content);
 }

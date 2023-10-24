@@ -1,10 +1,10 @@
-global slice storage::admin_address;
+global slice storage::root_address;
 global int storage::next_collection_index;
 global cell storage::collections;
 
 () load_data() impure inline {
     slice ds = get_data().begin_parse();
-    storage::admin_address = ds~load_msg_addr();
+    storage::root_address = ds~load_msg_addr();
     storage::next_collection_index = ds~load_uint(8);
     storage::collections = ds~load_dict();
 }
@@ -12,7 +12,7 @@ global cell storage::collections;
 () save_data() impure inline {
     set_data(
         begin_cell()
-            .store_slice(storage::admin_address)
+            .store_slice(storage::root_address)
             .store_uint(storage::next_collection_index, 8)
             .store_dict(storage::collections)
         .end_cell()

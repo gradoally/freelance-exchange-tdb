@@ -28,8 +28,8 @@ describe('Master', () => {
             Master.createFromConfig({
                 ownerAddress: deployer.address,
                 nextCollectionIndex: 0,
-                collectionsDict: Dictionary.empty(Dictionary.Keys.Uint(8), Dictionary.Values.Address())
-            }, await compile('Master'))
+            }, 
+            await compile('Master'))
         );
 
         const deployResult = await master.sendDeploy(deployer.getSender(), toNano('0.05'));
