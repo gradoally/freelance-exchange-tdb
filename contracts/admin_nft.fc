@@ -2,7 +2,6 @@
 
 #include "imports/stdlib.fc";
 #include "imports/messages.fc";
-#include "imports/constants.fc";
 #include "imports/params.fc";
 #include "imports/op-codes.fc";
 
@@ -121,7 +120,7 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
                 .store_uint(index, 256)
                 .store_slice(owner_address)
                 .store_ref(body)
-                .store_uint(revoked_at, 64)
+                .store_uint(revoked_at, 64);
 
         send_msg(0x10 | 0x18, dest, 0, op::ownership_proof, query_id, msg, CARRY_REMAINING_GAS);
         return ();
@@ -162,28 +161,6 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
     if (op == op::edit_content) { ;; owner can change content and dns records
         throw_unless(410, equal_slices(sender_address, owner_address));
         store_data(index, collection_address, owner_address, in_msg_body~load_ref(), authority_address, revoked_at);
-        return ();
-    }
-    if (op == op::change_record) { 
-        throw_unless(411, equal_slices(sender_address, owner_address));
-        int key = in_msg_body~load_uint(256);
-        int has_value = in_msg_body.slice_refs() > 0;
-
-        slice cs = content.begin_parse();
-        throw_unless(412, cs~load_uint(8) == 0); ;; data onchain tag
-        cell keyvalue_map = cs~load_dict();
-
-        if (has_value) {
-            cell value = in_msg_body~load_ref();
-
-            keyvalue_map~udict_set_ref(256, key, value);
-        } else {
-            keyvalue_map~udict_delete?(256, key);
-        }
-
-        content = begin_cell().store_uint(0, 8).store_dict(keyvalue_map).end_cell();
-
-        store_data(index, collection_address, owner_address, content, authority_address, revoked_at);
         return ();
     }
     if (op == op::transfer) {

@@ -8,7 +8,7 @@
     slice ps = payload.begin_parse();
     int ps_op = ps~load_uint(32);
 
-    int order_id = ps_op~load_uint(64);
+    int order_id = ps~load_uint(64);
     slice order_address = return_collection_addr_by_id(2).calculate_item_address(return_item_code_by_id(2), 0, order_id);
     
     if (ps_op == op::change_status_from_moderation_to_active) {

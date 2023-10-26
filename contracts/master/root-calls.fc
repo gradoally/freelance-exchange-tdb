@@ -1,9 +1,26 @@
-#include "utils.fc";
+#include "common-utils.fc";
+#include "sbt-utils.fc";
+#include "order-utils.fc";
 
 () handle_root_messages(int op, int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
-    
+
     if (op == op::deploy_collection) {
         deploy_collection(in_msg_body~load_ref(), in_msg_body~load_ref());  
+        return ();
+    }
+
+    if (op == op::create_admin) {
+        deploy_sbt(0, query_id, in_msg_body~load_uint(64), in_msg_body~load_coins(), in_msg_body~load_ref());
+        return ();
+    }
+
+    if (op == op::destroy_sbt) {
+        destroy_sbt(in_msg_body~load_msg_addr(), query_id);
+        return ();
+    }
+
+    if (op == op::revoke_sbt) {
+        revoke_sbt(in_msg_body~load_msg_addr(), query_id);
         return ();
     }
     
@@ -29,10 +46,6 @@
         force_chain(new_root);
         storage::root_address = new_root;
         save_data();
-        return ();
-    }
-
-    if (op == op::change_status_from_moderation_to_active) {
         return ();
     }
     throw(0xffff);

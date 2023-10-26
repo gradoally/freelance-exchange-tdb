@@ -40,13 +40,12 @@ cell return_item_code_by_id(int collection_id) inline {
   save_data();
 }
 
-slice calculate_item_address(slice collection_addr, cell item_code, int wc, int index) inline {
-  cell data = begin_cell().store_uint(index, 64).store_slice(collection_addr).end_cell();
-  cell state_init = begin_cell().store_uint(0, 2).store_dict(item_code).store_dict(data).store_uint(0, 1).end_cell();
-
-  return begin_cell()
-    .store_uint(4, 3)
-    .store_int(wc, 8)
-    .store_uint(cell_hash(state_init), 256)
-  .end_cell().begin_parse();
+() edit_item_content (slice item_address, int query_id, cell content) impure inline {
+  cell msg = begin_cell()
+        .store_uint(op::edit_content, 32)
+        .store_uint(query_id, 64)
+        .store_dict(content)
+      .end_cell();
+  
+  messages::send_simple(0, item_address, msg, CARRY_REMAINING_GAS);
 }

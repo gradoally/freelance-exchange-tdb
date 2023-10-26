@@ -184,7 +184,6 @@ describe('Master', () => {
 
         const deployOrderResult = await master.sendDeployItem(first_user_wallet.getSender(), {
             itemIndex: 0,
-            collectionId: 0,
             itemOwnerAddress: admin_wallet.address,
             metadataDict: buildOrderOnchainMetadata({
                 name: 'Some Order',

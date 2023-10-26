@@ -12,7 +12,6 @@
 #include "imports/stdlib.fc";
 #include "imports/messages.fc";
 #include "imports/op-codes.fc";
-#include "imports/constants.fc";
 #include "imports/params.fc";
 
 (slice, int, cell, cell, cell) load_data() inline {
