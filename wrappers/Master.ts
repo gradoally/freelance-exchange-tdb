@@ -74,8 +74,8 @@ export class Master implements Contract {
         via: Sender,
         opts: {
             itemIndex: number;
+            op: number;
             itemOwnerAddress: Address;
-            collectionId: number;
             metadataDict: Dictionary<bigint, Cell>;
         }
     ) {
@@ -93,9 +93,8 @@ export class Master implements Contract {
             value: toNano('0.5'),
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
-                .storeUint(Opcodes.deployNftItem, 32)
+                .storeUint(opts.op, 32)
                 .storeUint(0, 64)
-                .storeUint(opts.collectionId, 8)
                 .storeUint(opts.itemIndex, 64)
                 .storeCoins(toNano('0.05'))
                 .storeRef(itemMessage)
@@ -117,7 +116,7 @@ export class Master implements Contract {
             value: toNano('0.05'),
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
-                .storeUint(Opcodes.transferItem, 32)
+                .storeUint(Opcodes.transferOrder, 32)
                 .storeUint(0, 64)
                 .storeAddress(opts.itemAddress)
                 .storeAddress(opts.newOwner)
@@ -143,7 +142,7 @@ export class Master implements Contract {
             value: toNano('0.05'),
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
-                .storeUint(Opcodes.editItemContent, 32)
+                .storeUint(Opcodes.editContent, 32)
                 .storeUint(0, 64)
                 .storeAddress(opts.itemAddress)
                 .storeRef(contentCell)

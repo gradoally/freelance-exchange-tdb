@@ -1,4 +1,5 @@
 #include "../imports/op-codes.fc";
+#include "../imports/messages.fc";
 #include "storage.fc";
 
 () handle_master_messages(int op, int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
@@ -79,6 +80,9 @@
         throw_unless(30, equal_slices(status, "Fulfilled"));
 
         if (in_msg_body~load_uint(1)) {
+            messages::send_simple(0, storage::editor_address, begin_cell().store_uint(op::init_arbitration, 32)
+                                            .store_uint(query_id, 64).store_uint(storage::index, 64).end_cell(), CARRY_REMAINING_GAS);
+    
             data~udict_set_ref(256, "status"H, begin_cell().store_uint(0, 8).store_slice("On arbitration").end_cell());
         } else {
             data~udict_set_ref(256, "status"H, begin_cell().store_uint(0, 8).store_slice("Completed").end_cell());

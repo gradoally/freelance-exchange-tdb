@@ -1,0 +1,35 @@
+() deploy_sbt(int collection_id, int query_id, int item_index, int amount, cell nft_content) impure inline {
+  slice cs = nft_content.begin_parse();
+  cs~load_msg_addr();
+  cs~load_ref();
+  throw_unless(67, equal_slices(my_address(), cs~load_msg_addr()));
+  
+  slice collection_address = return_collection_addr_by_id(collection_id);
+  cell msg = begin_cell()
+        .store_uint(op::deploy_nft_item, 32)
+        .store_uint(query_id, 64)
+        .store_uint(item_index, 64)
+        .store_coins(amount)
+        .store_ref(nft_content)
+      .end_cell();
+
+  messages::send_simple(0, collection_address, msg, CARRY_REMAINING_GAS);
+}
+
+() destroy_sbt(slice item_address, int query_id) impure inline {
+  cell msg = begin_cell()
+        .store_uint(op::destroy, 32)
+        .store_uint(query_id, 64)
+      .end_cell();
+
+  messages::send_simple(0, item_address, msg, CARRY_REMAINING_GAS);
+}
+
+() revoke_sbt(slice item_address, int query_id) impure inline {
+  cell msg = begin_cell()
+        .store_uint(op::revoke, 32)
+        .store_uint(query_id, 64)
+      .end_cell();
+
+  messages::send_simple(0, item_address, msg, CARRY_REMAINING_GAS);
+}

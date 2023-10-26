@@ -9,61 +9,10 @@
 #include "master/root-calls.fc";
 #include "master/admin-calls.fc";
 #include "master/user-calls.fc";
-#include "master/utils.fc";
-
-() deploy_item (int collection_id, int query_id, int item_index, int amount, cell nft_content) impure inline {
-  slice collection_address = return_collection_addr_by_id(collection_id);
-  cell msg = begin_cell()
-        .store_uint(op::deploy_nft_item, 32)
-        .store_uint(query_id, 64)
-        .store_uint(item_index, 64)
-        .store_coins(amount)
-        .store_ref(nft_content)
-      .end_cell();
-
-  messages::send_simple(0, collection_address, msg, CARRY_REMAINING_GAS);
-}
-
-() edit_item_content (slice item_address, int query_id, cell content) impure inline {
-  cell msg = begin_cell()
-        .store_uint(op::edit_content, 32)
-        .store_uint(query_id, 64)
-        .store_dict(content)
-      .end_cell();
-  
-  messages::send_simple(0, item_address, msg, CARRY_REMAINING_GAS);
-}
-
-() destroy_sbt_item (slice item_address, int query_id) impure inline {
-  cell msg = begin_cell()
-        .store_uint(op::destroy, 32)
-        .store_uint(query_id, 64)
-      .end_cell();
-
-  messages::send_simple(0, item_address, msg, CARRY_REMAINING_GAS);
-}
-
-() revoke_sbt_item (slice item_address, int query_id) impure inline {
-  cell msg = begin_cell()
-        .store_uint(op::revoke, 32)
-        .store_uint(query_id, 64)
-      .end_cell();
-
-  messages::send_simple(0, item_address, msg, CARRY_REMAINING_GAS);
-}
-
-() transfer_item (slice item_address, int query_id, slice new_owner_address, slice resp_address, int fwd_amount) impure inline {
-  cell msg = begin_cell()
-        .store_uint(op::transfer, 32)
-        .store_uint(query_id, 64)
-        .store_slice(new_owner_address)
-        .store_slice(resp_address)
-        .store_uint(0, 1)
-        .store_coins(fwd_amount)
-      .end_cell();
-
-  messages::send_simple(0, item_address, msg, CARRY_REMAINING_GAS);
-}
+  ;; storage::collections:
+  ;; 0 -> Admin Collection
+  ;; 1 -> User Collection
+  ;; 2 -> Order Collection
 
 () recv_internal(int balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
   if (in_msg_body.slice_bits() < 96) { 
@@ -84,30 +33,26 @@
   int op = in_msg_body~load_uint(32);
   int query_id = in_msg_body~load_uint(64);
 
-  if (op == op::deploy_nft_item) {
-    deploy_item(in_msg_body~load_uint(8), query_id, in_msg_body~load_uint(64), in_msg_body~load_coins(), in_msg_body~load_ref());
+  if (op == op::create_user) {
+    deploy_sbt(1, query_id, in_msg_body~load_uint(64), in_msg_body~load_coins(), in_msg_body~load_ref());
     return ();
   }
 
-  if (op == op::destroy_sbt_item) {
-    destroy_sbt_item(in_msg_body~load_msg_addr(), query_id);
+  if (op == op::create_order) {
+    deploy_order(2, query_id, in_msg_body~load_uint(64), in_msg_body~load_coins(), in_msg_body~load_ref());
     return ();
   }
 
-  if (op == op::transfer_item) {
-    transfer_item(in_msg_body~load_msg_addr(), query_id, in_msg_body~load_msg_addr(), in_msg_body~load_msg_addr(), in_msg_body~load_coins());
+  if (op == op::init_arbitration) {
+    int id = in_msg_body~load_uint(64);
+
+    throw_unless(66, equal_slices(sender_address, return_collection_addr_by_id(2).calculate_item_address(return_item_code_by_id(2), 0, id)));
+
+    ;; TO DO: implement arbitration process
+
     return ();
   }
 
-  if (equal_slices(sender_address, storage::root_address)) {
-    handle_root_messages(op, query_id, balance, msg_value, in_msg_body);
-    return ();
-  }
-
-  ;; storage::collections:
-  ;; 0 -> Admin Collection
-  ;; 1 -> User Collection
-  ;; 2 -> Order Collection
   if (op == op::ownership_proof) {
     int id = in_msg_body~load_uint(256);
 
@@ -119,6 +64,11 @@
       handle_user_messages(query_id, balance, msg_value, in_msg_body);
     }
 
+    return ();
+  }
+
+  if (equal_slices(sender_address, storage::root_address)) {
+    handle_root_messages(op, query_id, balance, msg_value, in_msg_body);
     return ();
   }
 

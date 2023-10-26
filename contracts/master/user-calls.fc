@@ -16,5 +16,12 @@
                             .store_uint(query_id, 64).store_slice(owner_addr).store_slice(text).end_cell(), CARRY_REMAINING_GAS);
         return ();
     }
+
+    if (ps_op == op::transfer_order) {
+        int order_id = in_msg_body~load_uint(64);
+        slice order_address = return_collection_addr_by_id(2).calculate_item_address(return_item_code_by_id(2), 0, order_id);
+        transfer_order(order_address, query_id, in_msg_body~load_msg_addr(), in_msg_body~load_msg_addr(), in_msg_body~load_coins());
+        return ();
+    }
     throw(0xffff);
 }
