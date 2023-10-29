@@ -43,4 +43,5 @@ const op::assign_user_to_task = "op::assign_user_to_task"c;
 const op::task_completed = "op::task_completed"c;
 const op::customer_feedback = "op::customer_feedback"c;
 const op::init_arbitration = "op::init_arbitration"c;
+const op::process_arbitration = "op::process_arbitration"c;
 const op::arbitration_outcome = "op::arbitration_outcome"c;

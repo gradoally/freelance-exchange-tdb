@@ -1,0 +1,27 @@
+global slice storage::owner_address;
+global int storage::next_item_index;
+global cell storage::content;
+global cell storage::item_code;
+global cell storage::royalty_params;
+
+() load_data() impure inline {
+    slice ds = get_data().begin_parse();
+
+    storage::owner_address = ds~load_msg_addr();
+    storage::next_item_index = ds~load_uint(64);
+    storage::content = ds~load_ref();
+    storage::item_code = ds~load_ref();
+    storage::royalty_params = ds~load_ref();
+}
+
+() store_data() impure inline {
+    set_data(
+        begin_cell()
+            .store_slice(storage::owner_address)
+            .store_uint(storage::next_item_index, 64)
+            .store_ref(storage::content)
+            .store_ref(storage::item_code)
+            .store_ref(storage::royalty_params)
+        .end_cell()
+    );
+}

@@ -16,7 +16,6 @@ export function orderNftConfigToCell(config: OrderNftConfig): Cell {
             .storeAddress(config.ownerAddress)
             .storeRef(config.content)
             .storeAddress(config.editorAddress)
-            .storeDict(Dictionary.empty())
         .endCell();
 }
 
