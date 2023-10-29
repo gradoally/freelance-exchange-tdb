@@ -1,6 +1,6 @@
 #include "../imports/op-codes.fc";
 #include "../imports/messages.fc";
-#include "storage.fc";
+#include "item-storage.fc";
 
 () handle_master_messages(int op, int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
 

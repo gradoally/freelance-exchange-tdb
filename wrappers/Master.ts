@@ -16,13 +16,12 @@ import { collectionsDictValue } from './utils/customDictValue';
 
 export type MasterConfig = {
     ownerAddress: Address;
-    nextCollectionIndex: number;
 };
 
 export function masterConfigToCell(config: MasterConfig): Cell {
     return beginCell()   
         .storeAddress(config.ownerAddress)
-        .storeUint(config.nextCollectionIndex, 8)
+        .storeUint(0, 8)
         .storeDict(Dictionary.empty(Dictionary.Keys.Uint(8), collectionsDictValue))
     .endCell();
 }
@@ -56,7 +55,6 @@ export class Master implements Contract {
             collectionData: Cell;
         }
     ) {
-
         await provider.internal(via, {
             value: toNano('0.1'),
             sendMode: SendMode.PAY_GAS_SEPARATELY,
@@ -102,50 +100,20 @@ export class Master implements Contract {
         });
     }
 
-    async sendTransferItem(
+    async sendRevokeSbt(
         provider: ContractProvider, 
         via: Sender,
         opts: {
-            newOwner: Address;
             itemAddress: Address;
-            responseAddress: Address;
-            fwdAmount?: bigint;
         }
     ) {
         await provider.internal(via, {
             value: toNano('0.05'),
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
-                .storeUint(Opcodes.transferOrder, 32)
+                .storeUint(Opcodes.revokeSbt, 32)
                 .storeUint(0, 64)
                 .storeAddress(opts.itemAddress)
-                .storeAddress(opts.newOwner)
-                .storeAddress(opts.responseAddress)
-                .storeCoins(opts.fwdAmount || 0)
-            .endCell(),
-        });
-    }
-
-    async sendEditItemContent(
-        provider: ContractProvider, 
-        via: Sender,
-        opts: {
-            itemAddress: Address;
-            metadataDict: Dictionary<bigint, Cell>;
-        }
-    ) {
-        const contentCell = beginCell()
-            .storeDict(opts.metadataDict, Dictionary.Keys.BigUint(256), Dictionary.Values.Cell())
-        .endCell()
-
-        await provider.internal(via, {
-            value: toNano('0.05'),
-            sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: beginCell()
-                .storeUint(Opcodes.editContent, 32)
-                .storeUint(0, 64)
-                .storeAddress(opts.itemAddress)
-                .storeRef(contentCell)
             .endCell(),
         });
     }
@@ -161,7 +129,7 @@ export class Master implements Contract {
             value: toNano('0.05'),
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: beginCell()
-                .storeUint(Opcodes.destroySbtItem, 32)
+                .storeUint(Opcodes.destroySbt, 32)
                 .storeUint(0, 64)
                 .storeAddress(opts.itemAddress)
             .endCell(),

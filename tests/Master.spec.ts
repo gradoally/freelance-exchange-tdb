@@ -1,50 +1,43 @@
-import { Blockchain, SandboxContract, TreasuryContract, printTransactionFees } from '@ton-community/sandbox';
-import { Address, Cell, Dictionary, toNano } from 'ton-core';
+import { Blockchain, SandboxContract, TreasuryContract } from '@ton-community/sandbox';
+import { beginCell, toNano } from 'ton-core';
 import { Master } from '../wrappers/Master';
 import '@ton-community/test-utils';
 import { compile } from '@ton-community/blueprint';
 import { buildNftCollectionDataCell } from '../wrappers/utils/collectionHelpers';
-import { AdminCollection } from '../wrappers/AdminCollection';
-import { buildOrderOnchainMetadata } from '../wrappers/utils/build_data';
+import { buildAdminOnchainMetadata, buildOrderOnchainMetadata, buildUserOnchainMetadata } from '../wrappers/utils/build_data';
+import { Opcodes } from '../wrappers/utils/opCodes';
+import { AdminNft } from '../wrappers/AdminNft';
 
 describe('Master', () => {
 
     let blockchain: Blockchain;
-    let deployer: SandboxContract<TreasuryContract>;
-    let admin_wallet: SandboxContract<TreasuryContract>;
-    let first_user_wallet: SandboxContract<TreasuryContract>;
-    let second_user_wallet: SandboxContract<TreasuryContract>;
+    let admin: SandboxContract<TreasuryContract>;
+    let root: SandboxContract<TreasuryContract>;
+    let user1: SandboxContract<TreasuryContract>;
+    let user2: SandboxContract<TreasuryContract>;
     let master: SandboxContract<Master>;
 
     beforeAll(async () => {
 
         blockchain = await Blockchain.create();
-        deployer = await blockchain.treasury('deployer');
-        admin_wallet = await blockchain.treasury('admin_wallet');
-        first_user_wallet = await blockchain.treasury('first_user_wallet');
-        second_user_wallet = await blockchain.treasury('second_user_wallet');
+        root = await blockchain.treasury('root');
+        admin = await blockchain.treasury('admin');
+        user1 = await blockchain.treasury('user1');
+        user2 = await blockchain.treasury('user2');
 
         master = blockchain.openContract(
             Master.createFromConfig({
-                ownerAddress: deployer.address,
-                nextCollectionIndex: 0,
+                ownerAddress: root.address,
             }, 
             await compile('Master'))
         );
 
-        const deployResult = await master.sendDeploy(deployer.getSender(), toNano('0.05'));
+        const deployResult = await master.sendDeploy(root.getSender(), toNano('0.05'));
 
         expect(deployResult.transactions).toHaveTransaction({
-            from: deployer.address,
+            from: root.address,
             to: master.address,
             deploy: true,
-        });
-
-        await blockchain.setVerbosityForAddress(master.address, {
-            print: true,
-            blockchainLogs: false,
-            debugLogs: false,
-            vmLogs: 'vm_logs'
         });
 
         // Deploy admins collection (first)
@@ -64,13 +57,13 @@ describe('Master', () => {
             }
         });
 
-        const deployAdminCollectionResult = await master.sendDeployCollection(deployer.getSender(), {
+        const deployAdminCollectionResult = await master.sendDeployCollection(root.getSender(), {
             collectionCode: await compile('AdminCollection'),
             collectionData: adminCollectionDataCell,
         });
         
         expect(deployAdminCollectionResult.transactions).toHaveTransaction({
-            from: deployer.address,
+            from: root.address,
             to: master.address,
             success: true,
             outMessagesCount: 1
@@ -103,13 +96,13 @@ describe('Master', () => {
             }
         });
         
-        const deployUserCollectionResult = await master.sendDeployCollection(deployer.getSender(), {
+        const deployUserCollectionResult = await master.sendDeployCollection(root.getSender(), {
             collectionCode: await compile('UserCollection'),
             collectionData: userCollectionDataCell,
         });
         
         expect(deployUserCollectionResult.transactions).toHaveTransaction({
-            from: deployer.address,
+            from: root.address,
             to: master.address,
             success: true,
             outMessagesCount: 1
@@ -127,7 +120,7 @@ describe('Master', () => {
 
         // Deploy orders collection (third)
 
-        const ordersollectionDataCell = buildNftCollectionDataCell({
+        const ordersCollectionDataCell = buildNftCollectionDataCell({
             collectionName: 'Orders Collection',
             collectionDescription: 'Orders Collection with onchain metadata',
             collectionImageUrl: 'https://tonbyte.com/gateway/B9C487EE13678E60C95930628460E8EB9AEBC629BEE41B501C6C1A70B9012BD4/collection.jpg',
@@ -142,13 +135,13 @@ describe('Master', () => {
             }
         });
         
-        const deployOrdersCollectionResult = await master.sendDeployCollection(deployer.getSender(), {
+        const deployOrdersCollectionResult = await master.sendDeployCollection(root.getSender(), {
             collectionCode: await compile('OrderCollection'),
-            collectionData: ordersollectionDataCell,
+            collectionData: ordersCollectionDataCell,
         });
         
         expect(deployOrdersCollectionResult.transactions).toHaveTransaction({
-            from: deployer.address,
+            from: root.address,
             to: master.address,
             success: true,
             outMessagesCount: 1
@@ -164,27 +157,55 @@ describe('Master', () => {
         
         expect(thirdNextCollectionIndex).toEqual(3);
 
-        console.log('Master address: ' + master.address);
-
-        printTransactionFees(deployAdminCollectionResult.transactions);
-        printTransactionFees(deployUserCollectionResult.transactions);
-        printTransactionFees(deployOrdersCollectionResult.transactions);
-
-    });
-
-    beforeEach(async () => {
-
-    });
-
-    it('should deploy user', async () => {
-
-    });
-
-    it('user should deploy order', async () => {
-
-        const deployOrderResult = await master.sendDeployItem(first_user_wallet.getSender(), {
+        const createAdminResult = await master.sendDeployItem(root.getSender(), {
+            op: Opcodes.createAdmin,
             itemIndex: 0,
-            itemOwnerAddress: admin_wallet.address,
+            itemOwnerAddress: admin.address,
+            metadataDict: buildAdminOnchainMetadata({
+                name: 'Admin 1',
+                description: '',
+                image: 'tonstorage://B9C487EE13678E60C95930628460E8EB9AEBC629BEE41B501C6C1A70B9012BD4/task.jpg',
+                telegram: '@motherfucker007'
+            })
+        });
+
+        expect(createAdminResult.transactions).toHaveTransaction({
+            from: root.address,
+            to: master.address,
+            success: true,
+            outMessagesCount: 1
+        });
+
+    //    console.log(createAdminResult.events)
+
+        const createUserResult = await master.sendDeployItem(user1.getSender(), {
+            op: Opcodes.createUser,
+            itemIndex: 0,
+            itemOwnerAddress: user1.address,
+            metadataDict: buildUserOnchainMetadata({
+                name: 'User 1',
+                description: '',
+                image: 'tonstorage://B9C487EE13678E60C95930628460E8EB9AEBC629BEE41B501C6C1A70B9012BD4/task.jpg',
+                telegram: '@motherfucker666',
+                bio: '666 is my fav number',
+                site: 'https://mfucker.xyz',
+                portfolio: '',
+                resume: '',
+                specialization: 'mother fuckin'
+            })
+        });
+
+        expect(createUserResult.transactions).toHaveTransaction({
+            from: user1.address,
+            to: master.address,
+            success: true,
+            outMessagesCount: 1
+        });
+
+        const createOrderResult = await master.sendDeployItem(user1.getSender(), {
+            op: Opcodes.createOrder,
+            itemIndex: 0,
+            itemOwnerAddress: master.address,
             metadataDict: buildOrderOnchainMetadata({
                 name: 'Some Order',
                 description: 'Some Order Desription',
@@ -201,47 +222,61 @@ describe('Master', () => {
             })
         });
 
-        expect(deployOrderResult.transactions).toHaveTransaction({
-            from: first_user_wallet.address,
+        expect(createOrderResult.transactions).toHaveTransaction({
+            from: user1.address,
             to: master.address,
             success: true,
             outMessagesCount: 1
         });
-
-        expect(deployOrderResult.transactions).toHaveTransaction({
-            from: master.address,
-            success: true
-        });
-
     });
 
     it('admin should activate an order', async () => {
+        const adminCollectionAddress = (await blockchain.getContract(master.address)).get('get_collection_address_by_id').stackReader.readAddress();
+        const adminSbtAddress = (await blockchain.getContract(adminCollectionAddress)).get('get_nft_address_by_index', [{ type: 'int', value: 0n }]).stackReader.readAddress();
 
+        const adminSbt = blockchain.openContract(AdminNft.createFromAddress(adminSbtAddress));
+        
+        const proveOwnershipResult = await adminSbt.sendProveOwnership(admin.getSender(), {
+            dest: master.address,
+            withContent: true,
+            forwardPayload: beginCell()
+                .storeUint(Opcodes.changeStatusFromModerationToActive, 32)
+                .storeUint(0, 64)
+            .endCell()
+        });
+
+        expect(proveOwnershipResult.transactions).toHaveTransaction({
+            from: adminSbtAddress,
+            to: master.address,
+            success: true,
+            outMessagesCount: 1,
+            op: 0x0524c7ae
+        });
     });
 
-    it('freelancer should send responce to order', async () => {
+    // it('freelancer should send responce to order', async () => {
 
-    });
+    // });
 
-    it('customer should choose executor of order', async () => {
+    // it('customer should choose executor of order', async () => {
 
-    });
+    // });
 
-    it('freelancer should send notification of order completion', async () => {
+    // it('freelancer should send notification of order completion', async () => {
 
-    });
+    // });
 
-    it('customer should initiate arbitration', async () => {
+    // it('customer should initiate arbitration', async () => {
 
-    });
+    // });
 
-    it('admin should decide on arbitration', async () => {
+    // it('admin should decide on arbitration', async () => {
 
-    });
+    // });
 
-    it('customer should approve completion of order', async () => {
+    // it('customer should approve completion of order', async () => {
 
-    });
+    // });
 
 });
 

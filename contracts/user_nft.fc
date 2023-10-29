@@ -6,15 +6,6 @@
 #include "imports/op-codes.fc";
 
 int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
-;;
-;;  Storage
-;;
-;;  uint64 index
-;;  MsgAddressInt collection_address
-;;  MsgAddressInt owner_address
-;;  cell content
-;;  MsgAddressInt authority_address
-;;  uint64 revoked_at
 
 (int, int, slice, slice, cell, slice, int) load_data() inline {
     slice ds = get_data().begin_parse();
