@@ -5,6 +5,7 @@
 #include "imports/op-codes.fc";
 #include "order/master-calls.fc";
 #include "order/item-storage.fc";
+#include "order/get-methods.fc";
 
 int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
 
@@ -133,6 +134,50 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
         return ();
     }
 
+    if (op == op::is_customer?) {
+
+        (cell value, int f) = data.udict_get_ref?(256, "customer_addr"H);
+        throw_unless(135, f);
+
+        int onchain_bits = value.load_uint(8);
+        slice customer_addr = value.load_msg_addr();
+
+        int is_customer?;
+
+        if (sender_address == customer_addr) {
+            is_customer? = -1
+        } else {
+            is_customer? = 0
+        }
+
+        cell msg = begin_cell().store_uint(is_customer?, 32).end_cell()
+
+        messages::send_simple(0, sender_address, msg, 64);
+        
+    }
+
+    if (op == op::is_freelancer?) {
+
+        (cell value, int f) = data.udict_get_ref?(256, "freelancer_addr"H);
+        throw_unless(135, f);
+
+        int onchain_bits = value.load_uint(8);
+        slice freelancer_addr = value.load_msg_addr();
+
+        int is_freelancer?;
+
+        if (sender_address == customer_addr) {
+            is_freelancer? = -1
+        } else {
+            is_freelancer? = 0
+        }
+
+        cell msg = begin_cell().store_uint(is_freelancer?, 32).end_cell()
+
+        messages::send_simple(0, sender_address, msg, 64);
+
+    }
+
     if (op == op::transfer_editorship) {
         transfer_editorship(my_balance, storage::editor_address, sender_address, query_id, in_msg_body, fwd_fee);
         return ();
@@ -148,14 +193,4 @@ int min_tons_for_storage() asm "50000000 PUSHINT"; ;; 0.05 TON
         return ();
     }
     throw(0xffff);
-}
-
-slice get_editor_address() method_id {
-    load_data();
-    return storage::editor_address;
-}
-
-(int, int, slice, slice, cell) get_nft_data() method_id {
-    load_data();
-    return (init?, storage::index, storage::collection_address, storage::owner_address, storage::content);
 }

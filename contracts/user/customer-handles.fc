@@ -1,0 +1,15 @@
+if (op_order == op::create_order) {
+    
+}
+
+if (op_order == op::choose_freelancer) {
+
+}
+
+if (op_order == op::complete_order) {
+    
+}
+
+if (op_order == op::init_arbitration) {
+    
+}

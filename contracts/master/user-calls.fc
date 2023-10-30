@@ -1,4 +1,5 @@
 () handle_user_messages(int query_id, int my_balance, int msg_value, slice in_msg_body) impure inline {
+    
     slice owner_addr = in_msg_body~load_msg_addr();
     cell payload = in_msg_body~load_ref();
     
@@ -23,5 +24,22 @@
         transfer_order(order_address, query_id, in_msg_body~load_msg_addr(), in_msg_body~load_msg_addr(), in_msg_body~load_coins());
         return ();
     }
+
+    if (ps_op == op::choose_freelancer) {
+
+    }
+
+    if (ps_op == op::claim_payment) {
+
+    }
+
+    if (ps_op == op::complete_order) {
+
+    }
+
+    if (ps_op == op::complete_order) {
+
+    }
+
     throw(0xffff);
 }

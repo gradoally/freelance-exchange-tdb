@@ -1,0 +1,9 @@
+slice get_editor_address() method_id {
+    load_data();
+    return storage::editor_address;
+}
+
+(int, int, slice, slice, cell) get_nft_data() method_id {
+    load_data();
+    return (init?, storage::index, storage::collection_address, storage::owner_address, storage::content);
+}
